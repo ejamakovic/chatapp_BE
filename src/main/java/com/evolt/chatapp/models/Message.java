@@ -12,16 +12,18 @@ public class Message {
     private Long id;
 
     @ManyToOne
-    @JoinColumn(name = "conversation_id", nullable = false)
-    private Conversation conversation;
-
-    @ManyToOne
     @JoinColumn(name = "sender_id", nullable = false)
     private User sender;
 
-    @Column(columnDefinition = "TEXT", nullable = false)
+    // Ako je null, poruka je globalna, inače privatna
+    @ManyToOne
+    @JoinColumn(name = "receiver_id")
+    private User receiver;
+
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
 
+    @Column(nullable = false, updatable = false)
     private LocalDateTime timestamp = LocalDateTime.now();
 
     public Long getId() {
@@ -32,20 +34,20 @@ public class Message {
         this.id = id;
     }
 
-    public Conversation getConversation() {
-        return conversation;
-    }
-
-    public void setConversation(Conversation conversation) {
-        this.conversation = conversation;
-    }
-
     public User getSender() {
         return sender;
     }
 
     public void setSender(User sender) {
         this.sender = sender;
+    }
+
+    public User getReceiver() {
+        return receiver;
+    }
+
+    public void setReceiver(User receiver) {
+        this.receiver = receiver;
     }
 
     public String getContent() {

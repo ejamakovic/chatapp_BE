@@ -15,15 +15,11 @@ public class User {
     @Column(nullable = false, unique = true)
     private String username;
 
-    private Boolean connected = false;
+    @Column(nullable = false)
+    private boolean connected;
 
+    @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
-
-    @OneToMany(mappedBy = "sender")
-    private List<Message> messages;
-
-    @OneToMany(mappedBy = "user")
-    private List<ConversationParticipant> conversations;
 
     public Long getId() {
         return id;
@@ -41,11 +37,11 @@ public class User {
         this.username = username;
     }
 
-    public Boolean getConnected() {
+    public boolean isConnected() {
         return connected;
     }
 
-    public void setConnected(Boolean connected) {
+    public void setConnected(boolean connected) {
         this.connected = connected;
     }
 
@@ -55,22 +51,6 @@ public class User {
 
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
-    }
-
-    public List<Message> getMessages() {
-        return messages;
-    }
-
-    public void setMessages(List<Message> messages) {
-        this.messages = messages;
-    }
-
-    public List<ConversationParticipant> getConversations() {
-        return conversations;
-    }
-
-    public void setConversations(List<ConversationParticipant> conversations) {
-        this.conversations = conversations;
     }
 }
 
