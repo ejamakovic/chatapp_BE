@@ -2,6 +2,7 @@ package com.evolt.chatapp.controllers;
 
 import com.evolt.chatapp.models.Message;
 import com.evolt.chatapp.services.MessageService;
+import com.evolt.chatapp.websocket.ChatWebSocketHandler;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -11,8 +12,12 @@ import java.util.List;
 public class MessageController {
 
     private final MessageService messageService;
-    public MessageController(final MessageService messageService) {
+
+    private final ChatWebSocketHandler chatWebSocketHandler;
+
+    public MessageController(final MessageService messageService, ChatWebSocketHandler chatWebSocketHandler) {
         this.messageService = messageService;
+        this.chatWebSocketHandler = chatWebSocketHandler;
     }
 
     @GetMapping
@@ -22,7 +27,9 @@ public class MessageController {
 
     @PostMapping("/create")
     public void createMessage(@RequestBody final Message message) {
-        messageService.saveMessage(message);
+        Message savedMessage = messageService.saveMessage(message);
+        System.out.println(savedMessage);
+        chatWebSocketHandler.notifyNewMessage(savedMessage);
     }
 
 }

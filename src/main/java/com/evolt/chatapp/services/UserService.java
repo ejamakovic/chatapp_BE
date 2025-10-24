@@ -16,11 +16,12 @@ public class UserService {
         return userRepository.findAll();
     }
 
-    public List<User> getAllUsersByConnected(boolean connected) {
-        return userRepository.findAllByConnected(connected);
+    public List<User> getAllUsersByConnected() {
+        return userRepository.findAllByConnected(true);
     }
 
-    public void saveUser(User user) {
+    public User saveUser(User user) {
         userRepository.save(user);
+        return user;
     }
 }
