@@ -1,0 +1,26 @@
+package com.evolt.chatapp.services;
+
+import com.evolt.chatapp.models.User;
+import com.evolt.chatapp.repositories.UserRepository;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+
+@Service
+public class UserService {
+    private final UserRepository userRepository;
+    public UserService(UserRepository userRepository) {
+        this.userRepository = userRepository;
+    }
+    public List<User> getAllUsers() {
+        return userRepository.findAll();
+    }
+
+    public List<User> getAllUsersByConnected(boolean connected) {
+        return userRepository.findAllByConnected(connected);
+    }
+
+    public void saveUser(User user) {
+        userRepository.save(user);
+    }
+}

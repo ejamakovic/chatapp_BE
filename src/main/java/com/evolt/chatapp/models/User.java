@@ -2,7 +2,6 @@ package com.evolt.chatapp.models;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Entity
 @Table(name = "users")
@@ -16,10 +15,18 @@ public class User {
     private String username;
 
     @Column(nullable = false)
-    private boolean connected;
+    private boolean connected = true;
 
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
+
+    public User(String username) {
+        this.username = username;
+    }
+
+    public User() {
+
+    }
 
     public Long getId() {
         return id;
