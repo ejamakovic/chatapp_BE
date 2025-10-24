@@ -26,6 +26,21 @@ public class Message {
     @Column(nullable = false, updatable = false)
     private LocalDateTime timestamp = LocalDateTime.now();
 
+    public Message(Long id, String content) {
+        this.id = id;
+        this.content = content;
+    }
+
+    public Message() {
+
+    }
+
+    public Message(User sender, User receiver, String content) {
+        this.sender = sender;
+        this.receiver = receiver;
+        this.content = content;
+    }
+
     public Long getId() {
         return id;
     }

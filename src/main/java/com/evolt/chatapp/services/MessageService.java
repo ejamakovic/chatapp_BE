@@ -18,9 +18,8 @@ public class MessageService {
         return messageRepository.findAll();
     }
 
-    public Message saveMessage(Message message){
-        messageRepository.save(message);
-        return message;
+    public Message saveMessage(Message mess){
+        return messageRepository.save(mess);
     }
 
 }

@@ -2,12 +2,12 @@ package com.evolt.chatapp.controllers;
 
 
 import com.evolt.chatapp.models.User;
+import com.evolt.chatapp.models.dto.UserDTO;
 import com.evolt.chatapp.services.UserService;
 import com.evolt.chatapp.websocket.ChatWebSocketHandler;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/users")
@@ -32,11 +32,12 @@ public class UserController {
         return userService.getAllUsersByConnected();
     }
 
-    @PostMapping("/{username}")
-    public void createUser(@PathVariable String username) {
-        User user = new User(username);
-        User savedUser = userService.saveUser(user);
-        chatWebSocketHandler.notifyNewUser(savedUser);
+    @PostMapping("/create")
+    public void createUser(@RequestBody UserDTO userDTO) {
+        User user = new User(userDTO.getUsername());
+        userService.saveUser(user);
+        userDTO.setId(user.getId());
+        chatWebSocketHandler.notifyNewUser(userDTO);
     }
 
 }

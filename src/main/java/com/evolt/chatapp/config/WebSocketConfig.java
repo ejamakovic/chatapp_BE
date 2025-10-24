@@ -18,7 +18,6 @@ public class WebSocketConfig implements WebSocketConfigurer {
 
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
-        registry.addHandler(chatWebSocketHandler, "/ws/chat")
-                .setAllowedOrigins("http://localhost:3000"); // frontend port
+        registry.addHandler(chatWebSocketHandler, "/ws/chat").setAllowedOrigins("*");
     }
 }
