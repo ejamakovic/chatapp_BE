@@ -40,4 +40,13 @@ public class UserController {
         chatWebSocketHandler.notifyNewUser(userDTO);
     }
 
+    @PostMapping("/logout")
+    public void logoutUser(@RequestBody UserDTO userDTO) {
+        User user = userService.findByUsername(userDTO.getUsername());
+        if (user != null) {
+            user.setConnected(false);
+            userService.saveUser(user);
+        }
+    }
+
 }
