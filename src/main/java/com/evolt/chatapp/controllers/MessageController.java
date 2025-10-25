@@ -32,10 +32,10 @@ public class MessageController {
 
     @PostMapping("/create")
     public void createMessage(@RequestBody MessageDTO messageDTO) {
-        User sender = userService.findById(messageDTO.getSender().getId());
+        User sender = userService.findByUsername(messageDTO.getSender().getUsername());
         User receiver = null;
         if (messageDTO.getReceiver() != null) {
-            receiver = userService.findById(messageDTO.getReceiver().getId());
+            receiver = userService.findByUsername(messageDTO.getReceiver().getUsername());
         }
 
         Message message = new Message(sender, receiver, messageDTO.getContent());
