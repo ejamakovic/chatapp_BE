@@ -35,7 +35,11 @@ public class UserController {
     public ResponseEntity<User> createUser(@RequestBody UserDTO userDTO) {
         User user = new User(userDTO.getUsername());
         userService.saveUser(user);
-        chatWebSocketHandler.notifyNewUser(userDTO);
+        try {
+            chatWebSocketHandler.notifyNewUser(userDTO);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
         return ResponseEntity.ok(user);
     }
 
