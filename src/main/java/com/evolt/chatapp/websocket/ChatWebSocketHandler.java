@@ -96,6 +96,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
                         messageDTO.getTimestamp()
                 ));
                 sendToReceiver(messageDTO.getReceiver().getUsername(), message);
+                sendToReceiver(messageDTO.getSender().getUsername(), message);
             }
         } catch (Exception e) {
             e.printStackTrace();
