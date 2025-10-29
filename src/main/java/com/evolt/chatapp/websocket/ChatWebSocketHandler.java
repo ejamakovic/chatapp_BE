@@ -42,25 +42,26 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
                 break;
 
             case "user":
-                broadcast(message.getPayload());
-                break;
-
             case "chat":
                 broadcast(message.getPayload());
                 break;
 
             case "private":
-                String toUsername = node.get("to").asText();
-                sessions.stream()
-                        .filter(s -> toUsername.equals(s.getAttributes().get("username")))
-                        .findFirst()
-                        .ifPresent(receiver -> {
-                            try {
-                                receiver.sendMessage(new TextMessage(message.getPayload()));
-                            } catch (Exception e) {
-                                e.printStackTrace();
-                            }
-                        });
+                String sender = node.get("sender").asText();
+                String receiver = node.get("receiver").asText();
+
+                sessions.forEach(s -> {
+                    String sessionUsername = (String) s.getAttributes().get("username");
+                    if (sessionUsername != null &&
+                            (sessionUsername.equals(sender) || sessionUsername.equals(receiver)) &&
+                            s.isOpen()) {
+                        try {
+                            s.sendMessage(new TextMessage(message.getPayload()));
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }
+                });
                 break;
 
             default:
@@ -68,6 +69,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
                 break;
         }
     }
+
 
     public void notifyNewUser(UserDTO userDTO) {
         try {
