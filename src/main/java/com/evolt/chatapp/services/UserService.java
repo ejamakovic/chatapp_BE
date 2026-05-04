@@ -5,6 +5,7 @@ import com.evolt.chatapp.repositories.UserRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class UserService {
@@ -31,5 +32,24 @@ public class UserService {
 
     public User findByUsername(String username) {
         return userRepository.findByUsername(username);
+    }
+
+    public User createIfNotExists(String id, String username) {
+        return userRepository.findById(Long.valueOf(id))
+                .orElseGet(() -> {
+                    User u = new User();
+                    u.setId(Long.valueOf(id));
+                    u.setUsername(username);
+                    u.setConnected(true);
+                    return userRepository.save(u);
+                });
+    }
+
+    public User createIfNotExists(String username) {
+        Optional<User> user = Optional.ofNullable(userRepository.findByUsername(username));
+        if(user.isPresent()) {
+            return user.orElse(null);
+        }
+        return saveUser(new User(username));
     }
 }

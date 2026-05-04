@@ -9,6 +9,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+import static java.lang.System.*;
+
 @RestController
 @RequestMapping("/users")
 public class UserController {
@@ -33,6 +35,7 @@ public class UserController {
 
     @PostMapping("/create")
     public ResponseEntity<User> createUser(@RequestBody UserDTO userDTO) {
+        System.out.println("LOGIN: ");
         User user = new User(userDTO.getUsername());
         userService.saveUser(user);
         try {
@@ -44,13 +47,17 @@ public class UserController {
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<User> logoutUser(@RequestBody UserDTO userDTO) {
+    public ResponseEntity<Void> logoutUser(@RequestBody UserDTO userDTO) {
+
         User user = userService.findByUsername(userDTO.getUsername());
-        if (user != null) {
-            user.setConnected(false);
-            userService.saveUser(user);
-            return ResponseEntity.ok(user);
+
+        if (user == null) {
+            return ResponseEntity.notFound().build();
         }
-        return ResponseEntity.notFound().build();
+
+        user.setConnected(false);
+        userService.saveUser(user);
+
+        return ResponseEntity.ok().build();
     }
 }
