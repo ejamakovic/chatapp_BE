@@ -9,6 +9,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/auth")
 public class AuthController {
@@ -20,7 +22,9 @@ public class AuthController {
     private UserService userService;
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestParam String username, HttpServletResponse response) {
+    public ResponseEntity<?> login(@RequestParam String username,
+                                   HttpServletResponse response) {
+
         User user = userService.createIfNotExists(username);
 
         String token = jwtService.generateToken(
@@ -28,12 +32,19 @@ public class AuthController {
                 user.getUsername()
         );
 
+        // cookie (za backend auth)
         Cookie cookie = new Cookie("token", token);
         cookie.setHttpOnly(true);
         cookie.setPath("/");
         response.addCookie(cookie);
 
-        return ResponseEntity.ok(user);
+        // 🔥 direkt JSON response bez DTO
+        return ResponseEntity.ok(
+                Map.of(
+                        "token", token,
+                        "user", user
+                )
+        );
     }
 
     @GetMapping("/me")
@@ -42,6 +53,11 @@ public class AuthController {
         String userId = jwtService.extractUserId(token);
         User user = userService.findById(Long.valueOf(userId));
 
-        return ResponseEntity.ok(user);
+        return ResponseEntity.ok(
+                java.util.Map.of(
+                        "token", token,
+                        "user", user
+                )
+        );
     }
 }

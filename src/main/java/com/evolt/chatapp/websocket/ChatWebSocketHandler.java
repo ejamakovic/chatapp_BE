@@ -2,48 +2,48 @@ package com.evolt.chatapp.websocket;
 
 import com.evolt.chatapp.models.dto.MessageDTO;
 import com.evolt.chatapp.models.dto.UserDTO;
+import com.evolt.chatapp.services.MessageService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.Map;
 
 @Component
 public class ChatWebSocketHandler extends TextWebSocketHandler {
 
-    private final Set<WebSocketSession> sessions = new CopyOnWriteArraySet<>();
-
     private final Map<String, WebSocketSession> userSessions = new ConcurrentHashMap<>();
-
     private final ObjectMapper objectMapper = new ObjectMapper();
+    private final MessageService messageService;
+
+    public ChatWebSocketHandler(MessageService messageService) {
+        this.messageService = messageService;
+    }
 
     @Override
-    public void afterConnectionEstablished(WebSocketSession session) throws Exception {
-        sessions.add(session);
-        System.out.println("Novi korisnik povezan: " + session.getId());
+    public void afterConnectionEstablished(WebSocketSession session) {
+
+
+        String username = (String) session.getAttributes().get("username");
+
+        if (username != null) {
+            userSessions.put(username, session);
+        }
     }
 
     @Override
     public void afterConnectionClosed(WebSocketSession session,
-                                      org.springframework.web.socket.CloseStatus status) throws Exception {
+                                      org.springframework.web.socket.CloseStatus status) {
 
-        sessions.remove(session);
-
-        // 🔥 DODANO: uklanjanje iz mape
         String username = (String) session.getAttributes().get("username");
 
         if (username != null) {
             userSessions.remove(username);
         }
-
-        System.out.println("Korisnik se odjavio: " + username);
     }
-
     @Override
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
 
@@ -52,49 +52,43 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
 
         switch (type) {
 
-            case "init":
-                String username = node.get("username").asText();
-                session.getAttributes().put("username", username);
+            case "chat": {
 
-                // 🔥 DODANO: mapiranje usera
-                userSessions.put(username, session);
+                String sender = node.get("sender").asText();
+                String receiver = node.hasNonNull("receiver")
+                        ? node.get("receiver").asText()
+                        : null;
 
-                System.out.println("Korisnik registrovan u session: " + username);
-                break;
+                String content = node.get("content").asText();
 
-            case "user":
-            case "chat":
+                messageService.saveMessage(sender, receiver, content, null);
+
                 broadcast(message.getPayload());
                 break;
+            }
+            case "private": {
 
-            case "private":
                 String sender = node.get("sender").asText();
-                String receiver = node.get("receiver").asText();
+                String receiver = node.hasNonNull("receiver")
+                        ? node.get("receiver").asText()
+                        : null;
 
-                sessions.forEach(s -> {
-                    String sessionUsername = (String) s.getAttributes().get("username");
+                String content = node.get("content").asText();
 
-                    if (sessionUsername != null &&
-                            (sessionUsername.equals(sender) || sessionUsername.equals(receiver)) &&
-                            s.isOpen()) {
+                messageService.saveMessage(sender, receiver, content, null);
 
-                        try {
-                            s.sendMessage(new TextMessage(message.getPayload()));
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
-                    }
-                });
+                sendToReceiver(sender, message.getPayload());
+                sendToReceiver(receiver, message.getPayload());
                 break;
+            }
 
-            default:
-                System.out.println("Nepoznat tip poruke: " + type);
+            case "user": {
+                broadcast(message.getPayload());
+                break;
+            }
         }
-    }
 
-    // =========================
-    // EXISTING METHODS (NE DIRAMO)
-    // =========================
+    }
 
     public void notifyNewUser(UserDTO userDTO) {
         try {
@@ -125,7 +119,6 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
                         messageDTO.getTimestamp()
                 ));
 
-                // 🔥 OPTIMIZOVANO
                 sendToReceiver(messageDTO.getReceiver().getUsername(), message);
                 sendToReceiver(messageDTO.getSender().getUsername(), message);
             }
@@ -137,10 +130,9 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
 
     public void notifyNewChatRequest(String sender, String receiver) {
         try {
-            String message = objectMapper.writeValueAsString(new PrivateRequestPayload(
-                    sender,
-                    receiver
-            ));
+            String message = objectMapper.writeValueAsString(
+                    new PrivateRequestPayload(sender, receiver)
+            );
 
             sendToReceiver(receiver, message);
 
@@ -149,12 +141,9 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         }
     }
 
-    // =========================
-    // 🔥 OPTIMIZED (NOW USES MAP)
-    // =========================
-    private void sendToReceiver(String receiverUsername, String message) {
+    private void sendToReceiver(String username, String message) {
 
-        WebSocketSession session = userSessions.get(receiverUsername);
+        WebSocketSession session = userSessions.get(username);
 
         if (session != null && session.isOpen()) {
             try {
@@ -166,20 +155,17 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
     }
 
     private void broadcast(String message) {
-        sessions.forEach(s -> {
-            if (s.isOpen()) {
+
+        userSessions.values().forEach(session -> {
+            if (session.isOpen()) {
                 try {
-                    s.sendMessage(new TextMessage(message));
+                    session.sendMessage(new TextMessage(message));
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
             }
         });
     }
-
-    // =========================
-    // PAYLOADS (NE DIRAMO)
-    // =========================
 
     private static class PrivatePayload {
         public String type = "private";
