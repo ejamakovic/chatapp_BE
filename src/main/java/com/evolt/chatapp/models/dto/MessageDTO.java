@@ -1,5 +1,6 @@
 package com.evolt.chatapp.models.dto;
 
+import com.evolt.chatapp.models.Message;
 import com.evolt.chatapp.models.User;
 
 public class MessageDTO {
@@ -24,6 +25,13 @@ public class MessageDTO {
         this.sender = message.getSender();
         this.receiver = message.getReceiver();
         this.timestamp = message.getTimestamp();
+    }
+
+    public MessageDTO(Message message) {
+        this.content = message.getContent();
+        this.sender = message.getSender();
+        this.receiver = message.getReceiver();
+        this.timestamp = String.valueOf(message.getTimestamp());
     }
 
     public MessageDTO() {

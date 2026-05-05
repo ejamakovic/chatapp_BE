@@ -4,6 +4,10 @@ import com.evolt.chatapp.models.Message;
 import com.evolt.chatapp.models.User;
 import com.evolt.chatapp.models.dto.MessageDTO;
 import com.evolt.chatapp.repositories.MessageRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -51,13 +55,51 @@ public class MessageService {
         return messageRepository.save(message);
     }
 
-    public List<Message> findPrivateChat(User sender, User receiver) {
+    public MessageDTO saveMessageDTO(String senderUsername, String receiverUsername, String content, String timestamp) {
+
+        User sender = userService.findByUsername(senderUsername);
+
+        User receiver = null;
+        if (receiverUsername != null) {
+            receiver = userService.findByUsername(receiverUsername);
+        }
+
+        Message message = new Message();
+        message.setSender(sender);
+        message.setReceiver(receiver);
+        message.setContent(content);
+
+        message.setTimestamp(
+                timestamp != null
+                        ? LocalDateTime.parse(timestamp)
+                        : LocalDateTime.now()
+        );
+
+
+        return new MessageDTO(messageRepository.save(message));
+    }
+
+    public List<Message> getPrivateChat(User sender, User receiver) {
         return messageRepository.findBySenderAndReceiverOrReceiverAndSenderOrderByTimestampAsc(
                 sender, receiver, sender, receiver
         );
     }
 
-    public List<Message> findGlobalChat() {
+    public List<Message> getGlobalChat() {
         return messageRepository.findByReceiverOrderByTimestampAsc(null);
+    }
+
+    public Page<Message> findGlobalChat(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return messageRepository.findByReceiverIsNull(pageable);
+    }
+
+    public Page<Message> findPrivateChat(User sender, User receiver, int page, int size) {
+        Pageable pageable = PageRequest.of(
+                page,
+                size
+        );
+
+        return messageRepository.findPrivateChat(sender, receiver, pageable);
     }
 }

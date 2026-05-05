@@ -1,5 +1,6 @@
 package com.evolt.chatapp.websocket;
 
+import com.evolt.chatapp.models.Message;
 import com.evolt.chatapp.models.dto.MessageDTO;
 import com.evolt.chatapp.models.dto.UserDTO;
 import com.evolt.chatapp.services.MessageService;
@@ -51,34 +52,23 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         String type = node.get("type").asText();
 
         switch (type) {
-
             case "chat": {
-
                 String sender = node.get("sender").asText();
-                String receiver = node.hasNonNull("receiver")
-                        ? node.get("receiver").asText()
-                        : null;
-
+                String receiver = null;
                 String content = node.get("content").asText();
 
-                messageService.saveMessage(sender, receiver, content, null);
-
-                broadcast(message.getPayload());
+                MessageDTO saved = messageService.saveMessageDTO(sender, receiver, content, null);
+                notifyNewMessage(saved);
                 break;
             }
+
             case "private": {
-
                 String sender = node.get("sender").asText();
-                String receiver = node.hasNonNull("receiver")
-                        ? node.get("receiver").asText()
-                        : null;
-
+                String receiver = node.get("receiver").asText();
                 String content = node.get("content").asText();
 
-                messageService.saveMessage(sender, receiver, content, null);
-
-                sendToReceiver(sender, message.getPayload());
-                sendToReceiver(receiver, message.getPayload());
+                MessageDTO saved = messageService.saveMessageDTO(sender, receiver, content, null);
+                notifyNewMessage(saved);
                 break;
             }
 
@@ -101,24 +91,18 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
 
     public void notifyNewMessage(MessageDTO messageDTO) {
         try {
-            String message;
+            String message = objectMapper.writeValueAsString(
+                    new MessagePayload(
+                            messageDTO.getSender(),
+                            messageDTO.getReceiver(),
+                            messageDTO.getContent(),
+                            messageDTO.getTimestamp()
+                    )
+            );
 
             if (messageDTO.getReceiver() == null) {
-                message = objectMapper.writeValueAsString(new ChatPayload(
-                        messageDTO.getSender(),
-                        messageDTO.getContent(),
-                        messageDTO.getTimestamp()
-                ));
                 broadcast(message);
-
             } else {
-                message = objectMapper.writeValueAsString(new PrivatePayload(
-                        messageDTO.getSender(),
-                        messageDTO.getReceiver(),
-                        messageDTO.getContent(),
-                        messageDTO.getTimestamp()
-                ));
-
                 sendToReceiver(messageDTO.getReceiver().getUsername(), message);
                 sendToReceiver(messageDTO.getSender().getUsername(), message);
             }
@@ -167,21 +151,6 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         });
     }
 
-    private static class PrivatePayload {
-        public String type = "private";
-        public UserDTO sender;
-        public UserDTO receiver;
-        public String content;
-        public String timestamp;
-
-        public PrivatePayload(UserDTO sender, UserDTO receiver, String content, String timestamp) {
-            this.sender = sender;
-            this.receiver = receiver;
-            this.content = content;
-            this.timestamp = timestamp;
-        }
-    }
-
     private static class UserPayload {
         public String type = "user";
         public UserDTO user;
@@ -191,19 +160,20 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         }
     }
 
-    private static class ChatPayload {
-        public String type = "chat";
+    private static class MessagePayload {
+        public String type = "message";
         public UserDTO sender;
+        public UserDTO receiver;
         public String content;
         public String timestamp;
 
-        public ChatPayload(UserDTO sender, String content, String timestamp) {
+        public MessagePayload(UserDTO sender, UserDTO receiver, String content, String timestamp) {
             this.sender = sender;
+            this.receiver = receiver;
             this.content = content;
             this.timestamp = timestamp;
         }
     }
-
     private static class PrivateRequestPayload {
         public String type = "chatRequest";
         public String sender;

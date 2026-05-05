@@ -1,5 +1,7 @@
 package com.evolt.chatapp.models;
 
+import com.evolt.chatapp.models.dto.MessageDTO;
+import com.evolt.chatapp.models.dto.UserDTO;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
