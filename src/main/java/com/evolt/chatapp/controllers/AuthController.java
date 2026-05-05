@@ -1,7 +1,7 @@
 package com.evolt.chatapp.controllers;
 
 import com.evolt.chatapp.models.User;
-import com.evolt.chatapp.services.JwtService;
+import com.evolt.chatapp.jwt.JwtService;
 import com.evolt.chatapp.services.UserService;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;

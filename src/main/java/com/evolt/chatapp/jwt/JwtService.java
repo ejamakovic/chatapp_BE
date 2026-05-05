@@ -1,4 +1,4 @@
-package com.evolt.chatapp.services;
+package com.evolt.chatapp.jwt;
 
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
@@ -10,7 +10,7 @@ import java.util.Date;
 @Service
 public class JwtService {
 
-    private final Key SECRET =
+    private static final Key SECRET =
             Keys.hmacShaKeyFor("supersecretkeysupersecretkey123456".getBytes());
 
     public String generateToken(String userId, String username) {

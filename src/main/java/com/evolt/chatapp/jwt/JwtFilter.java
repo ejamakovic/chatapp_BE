@@ -1,6 +1,5 @@
-package com.evolt.chatapp.config;
+package com.evolt.chatapp.jwt;
 
-import com.evolt.chatapp.services.JwtService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
