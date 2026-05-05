@@ -6,6 +6,7 @@ import com.evolt.chatapp.models.dto.UserDTO;
 import com.evolt.chatapp.services.MessageService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Component;
+import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
@@ -17,34 +18,73 @@ import java.util.Map;
 public class ChatWebSocketHandler extends TextWebSocketHandler {
 
     private final Map<String, WebSocketSession> userSessions = new ConcurrentHashMap<>();
-    private final ObjectMapper objectMapper = new ObjectMapper();
     private final MessageService messageService;
+    private final ObjectMapper objectMapper;
 
-    public ChatWebSocketHandler(MessageService messageService) {
+    public ChatWebSocketHandler(MessageService messageService, ObjectMapper objectMapper) {
         this.messageService = messageService;
+        this.objectMapper = objectMapper;
     }
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) {
 
-
         String username = (String) session.getAttributes().get("username");
 
         if (username != null) {
             userSessions.put(username, session);
+
+            UserDTO userDTO = new UserDTO();
+            userDTO.setUsername(username);
+
+            notifyUserJoin(userDTO);
+        }
+    }
+
+    public void notifyUserJoin(UserDTO userDTO) {
+        try {
+            String message = objectMapper.writeValueAsString(
+                    new UserPayload(userDTO)
+            );
+
+            broadcast(message);
+
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
     @Override
-    public void afterConnectionClosed(WebSocketSession session,
-                                      org.springframework.web.socket.CloseStatus status) {
+    public void afterConnectionClosed(WebSocketSession session, CloseStatus status) {
 
         String username = (String) session.getAttributes().get("username");
 
         if (username != null) {
             userSessions.remove(username);
+
+            try {
+                String message = objectMapper.writeValueAsString(
+                        new UserLeavePayload(username)
+                );
+
+                broadcast(message);
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
     }
+
+    private static class UserLeavePayload {
+        public String type = "user_leave";
+        public String username;
+
+        public UserLeavePayload(String username) {
+            this.username = username;
+        }
+    }
+
+    // Handler from FE request
     @Override
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
 
@@ -52,19 +92,12 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         String type = node.get("type").asText();
 
         switch (type) {
-            case "chat": {
+            case "message": {
+                System.out.println("dOSAO ZAHJTEV SA FE ZA PORUKU!");
                 String sender = node.get("sender").asText();
-                String receiver = null;
-                String content = node.get("content").asText();
-
-                MessageDTO saved = messageService.saveMessageDTO(sender, receiver, content, null);
-                notifyNewMessage(saved);
-                break;
-            }
-
-            case "private": {
-                String sender = node.get("sender").asText();
-                String receiver = node.get("receiver").asText();
+                String receiver = node.hasNonNull("receiver")
+                        ? node.get("receiver").asText()
+                        : null;
                 String content = node.get("content").asText();
 
                 MessageDTO saved = messageService.saveMessageDTO(sender, receiver, content, null);
