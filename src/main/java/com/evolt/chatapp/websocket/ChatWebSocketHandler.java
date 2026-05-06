@@ -93,7 +93,6 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
 
         switch (type) {
             case "message": {
-                System.out.println("dOSAO ZAHJTEV SA FE ZA PORUKU!");
                 String sender = node.get("sender").asText();
                 String receiver = node.hasNonNull("receiver")
                         ? node.get("receiver").asText()

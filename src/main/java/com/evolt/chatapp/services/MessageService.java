@@ -64,17 +64,12 @@ public class MessageService {
             receiver = userService.findByUsername(receiverUsername);
         }
 
-        Message message = new Message();
-        message.setSender(sender);
-        message.setReceiver(receiver);
-        message.setContent(content);
-
+        Message message = new Message(sender, receiver, content);
         message.setTimestamp(
                 timestamp != null
                         ? LocalDateTime.parse(timestamp)
                         : LocalDateTime.now()
         );
-
 
         return new MessageDTO(messageRepository.save(message));
     }
