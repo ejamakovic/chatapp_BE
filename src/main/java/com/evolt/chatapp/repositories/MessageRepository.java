@@ -34,5 +34,24 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
     ORDER BY m.timestamp DESC
 """)
     Page<Message> findPrivateChat(User user1, User user2, Pageable pageable);
+
+    @Query("""
+SELECT m FROM Message m
+WHERE (m.sender = :user OR m.receiver = :user)
+AND m.timestamp = (
+    SELECT MAX(m2.timestamp)
+    FROM Message m2
+    WHERE 
+        (
+            m2.sender = m.sender AND m2.receiver = m.receiver
+        )
+        OR
+        (
+            m2.sender = m.receiver AND m2.receiver = m.sender
+        )
+)
+ORDER BY m.timestamp DESC
+""")
+    Page<Message> findAllPrivateChatsFromUser(User user, Pageable pageable);
 }
 

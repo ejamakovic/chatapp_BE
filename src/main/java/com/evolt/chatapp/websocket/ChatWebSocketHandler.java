@@ -206,6 +206,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
             this.timestamp = timestamp;
         }
     }
+
     private static class PrivateRequestPayload {
         public String type = "chatRequest";
         public String sender;

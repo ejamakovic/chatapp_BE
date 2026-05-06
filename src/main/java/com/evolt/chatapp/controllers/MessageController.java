@@ -120,4 +120,15 @@ public class MessageController {
         }
     }
 
+    @GetMapping("/allPrivateChats")
+    public ResponseEntity<?> allPrivateChats(
+            @RequestParam String username,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "30") int size)
+    {
+            User user = userService.findByUsername(username);
+            var chats = messageService.getAllPrivateChatsForUser(user, page, size);
+            return ResponseEntity.ok(chats);
+    }
+
 }

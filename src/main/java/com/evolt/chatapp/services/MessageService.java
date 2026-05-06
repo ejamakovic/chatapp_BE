@@ -90,11 +90,12 @@ public class MessageService {
     }
 
     public Page<Message> findPrivateChat(User sender, User receiver, int page, int size) {
-        Pageable pageable = PageRequest.of(
-                page,
-                size
-        );
-
+        Pageable pageable = PageRequest.of(page, size);
         return messageRepository.findPrivateChat(sender, receiver, pageable);
+    }
+
+    public Page<Message> getAllPrivateChatsForUser(User sender, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return messageRepository.findAllPrivateChatsFromUser(sender, pageable);
     }
 }
