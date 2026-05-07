@@ -85,10 +85,12 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         try {
             String message = objectMapper.writeValueAsString(
                     new SocketPayloads.MessagePayload(
+                            messageDTO.getId(),
                             messageDTO.getSender(),
                             messageDTO.getReceiver(),
                             messageDTO.getContent(),
-                            messageDTO.getTimestamp()
+                            messageDTO.getTimestamp(),
+                            messageDTO.getAttachments()
                     )
             );
 

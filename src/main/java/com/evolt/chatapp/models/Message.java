@@ -6,7 +6,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "messages")
+@Table(
+        name = "messages",
+        indexes = {
+                @Index(name = "idx_sender", columnList = "sender_id"),
+                @Index(name = "idx_receiver", columnList = "receiver_id"),
+                @Index(name = "idx_timestamp", columnList = "timestamp")
+        }
+)
 public class Message {
 
     @Id
@@ -14,9 +21,11 @@ public class Message {
     private Long id;
 
     @ManyToOne
+    @JoinColumn(name = "sender_id")
     private User sender;
 
     @ManyToOne
+    @JoinColumn(name = "receiver_id")
     private User receiver;
 
     @Column(columnDefinition = "TEXT")
@@ -24,7 +33,11 @@ public class Message {
 
     private LocalDateTime timestamp = LocalDateTime.now();
 
-    @OneToMany(mappedBy = "message", cascade = CascadeType.ALL)
+    @OneToMany(
+            mappedBy = "message",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true
+    )
     private List<Attachment> attachments = new ArrayList<>();
 
     public Message() {

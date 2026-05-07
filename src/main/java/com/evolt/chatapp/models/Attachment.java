@@ -1,9 +1,15 @@
 package com.evolt.chatapp.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 @Entity
-@Table(name = "attachments")
+@Table(
+        name = "attachments",
+        indexes = {
+                @Index(name = "idx_message_id", columnList = "message_id")
+        }
+)
 public class Attachment {
 
     @Id
@@ -14,6 +20,7 @@ public class Attachment {
 
     private String fileType;
 
+    @JsonIgnore
     @ManyToOne
     @JoinColumn(name = "message_id")
     private Message message;

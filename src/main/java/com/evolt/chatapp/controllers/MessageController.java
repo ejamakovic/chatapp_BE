@@ -4,6 +4,7 @@ import com.evolt.chatapp.models.Message;
 import com.evolt.chatapp.models.User;
 import com.evolt.chatapp.models.dto.MessageDTO;
 import com.evolt.chatapp.models.dto.UserDTO;
+import com.evolt.chatapp.models.mappers.MessageMapper;
 import com.evolt.chatapp.services.MessageService;
 import com.evolt.chatapp.services.UserService;
 import com.evolt.chatapp.websocket.ChatWebSocketHandler;
@@ -28,26 +29,6 @@ public class MessageController {
         this.chatWebSocketHandler = chatWebSocketHandler;
     }
 
-    private MessageDTO toDTO(Message msg) {
-        MessageDTO dto = new MessageDTO();
-
-        UserDTO sender = new UserDTO();
-        sender.setUsername(msg.getSender().getUsername());
-
-        dto.setSender(sender);
-
-        if (msg.getReceiver() != null) {
-            UserDTO receiver = new UserDTO();
-            receiver.setUsername(msg.getReceiver().getUsername());
-            dto.setReceiver(receiver);
-        }
-
-        dto.setContent(msg.getContent());
-        dto.setTimestamp(String.valueOf(msg.getTimestamp()));
-
-        return dto;
-    }
-
     @GetMapping
     public List<Message> getAllMessages() {
         return messageService.getAllMessages();
@@ -65,7 +46,7 @@ public class MessageController {
     ) {
         var messagesPage = messageService.findGlobalChat(page, size);
 
-        var dtoPage = messagesPage.map(this::toDTO);
+        var dtoPage = messagesPage.map(MessageMapper::toDTO);
 
         return ResponseEntity.ok(dtoPage);
     }
@@ -89,7 +70,7 @@ public class MessageController {
 
         var messagesPage = messageService.findPrivateChat(senderUser, receiverUser, page, size);
 
-        var dtoPage = messagesPage.map(this::toDTO);
+        var dtoPage = messagesPage.map(MessageMapper::toDTO);
 
         return ResponseEntity.ok(dtoPage);
     }
@@ -110,7 +91,7 @@ public class MessageController {
 
             messageService.saveMessage(msg);
 
-            MessageDTO responseDTO = toDTO(msg);
+            MessageDTO responseDTO = MessageMapper.toDTO(msg);
 
             chatWebSocketHandler.notifyNewMessage(responseDTO);
 

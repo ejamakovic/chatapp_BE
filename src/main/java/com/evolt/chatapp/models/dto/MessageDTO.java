@@ -3,19 +3,22 @@ package com.evolt.chatapp.models.dto;
 import com.evolt.chatapp.models.Attachment;
 import com.evolt.chatapp.models.Message;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 public class MessageDTO {
+
+    private Long id;
 
     private String content;
 
     private UserDTO sender;
 
-    private String timestamp;
-
     private UserDTO receiver;
 
-    private List<String> attachmentUrls;
+    private LocalDateTime timestamp;
+
+    private List<Attachment> attachments;
 
     public MessageDTO() {
     }
@@ -26,20 +29,14 @@ public class MessageDTO {
     }
 
     public MessageDTO(UserDTO sender, UserDTO receiver, String content) {
-        this.receiver = receiver;
         this.sender = sender;
+        this.receiver = receiver;
         this.content = content;
     }
 
-    public MessageDTO(MessageDTO message) {
-        this.content = message.getContent();
-        this.sender = message.getSender();
-        this.receiver = message.getReceiver();
-        this.timestamp = message.getTimestamp();
-        this.attachmentUrls = message.getAttachmentUrls();
-    }
-
     public MessageDTO(Message message) {
+
+        this.id = message.getId();
 
         this.content = message.getContent();
 
@@ -51,13 +48,17 @@ public class MessageDTO {
                 ? new UserDTO(message.getReceiver())
                 : null;
 
-        this.timestamp = String.valueOf(message.getTimestamp());
+        this.timestamp = message.getTimestamp();
 
-        this.attachmentUrls =
-                message.getAttachments()
-                        .stream()
-                        .map(Attachment::getFileUrl)
-                        .toList();
+        this.attachments = message.getAttachments();
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
     }
 
     public String getContent() {
@@ -76,14 +77,6 @@ public class MessageDTO {
         this.sender = sender;
     }
 
-    public String getTimestamp() {
-        return timestamp;
-    }
-
-    public void setTimestamp(String timestamp) {
-        this.timestamp = timestamp;
-    }
-
     public UserDTO getReceiver() {
         return receiver;
     }
@@ -92,11 +85,19 @@ public class MessageDTO {
         this.receiver = receiver;
     }
 
-    public List<String> getAttachmentUrls() {
-        return attachmentUrls;
+    public LocalDateTime getTimestamp() {
+        return timestamp;
     }
 
-    public void setAttachmentUrls(List<String> attachmentUrls) {
-        this.attachmentUrls = attachmentUrls;
+    public void setTimestamp(LocalDateTime timestamp) {
+        this.timestamp = timestamp;
+    }
+
+    public List<Attachment> getAttachments() {
+        return attachments;
+    }
+
+    public void setAttachments(List<Attachment> attachments) {
+        this.attachments = attachments;
     }
 }

@@ -5,6 +5,7 @@ import com.evolt.chatapp.models.Message;
 import com.evolt.chatapp.models.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
@@ -18,6 +19,7 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
 
     List<Message> findByReceiverOrderByTimestampAsc(User receiver);
 
+    @EntityGraph(attributePaths = "attachments")
     @Query("""
     SELECT m FROM Message m
     WHERE m.receiver IS null
@@ -25,6 +27,7 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
 """)
     Page<Message> findByReceiverIsNull(Pageable pageable);
 
+    @EntityGraph(attributePaths = "attachments")
     @Query("""
     SELECT m FROM Message m
     WHERE 
