@@ -1,9 +1,9 @@
 package com.evolt.chatapp.models;
 
-import com.evolt.chatapp.models.dto.MessageDTO;
-import com.evolt.chatapp.models.dto.UserDTO;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "messages")
@@ -14,24 +14,18 @@ public class Message {
     private Long id;
 
     @ManyToOne
-    @JoinColumn(name = "sender_id", nullable = false)
     private User sender;
 
-    // Ako je null, poruka je globalna, inače privatna
     @ManyToOne
-    @JoinColumn(name = "receiver_id")
     private User receiver;
 
-    @Column(nullable = false, columnDefinition = "TEXT")
+    @Column(columnDefinition = "TEXT")
     private String content;
 
-    @Column(nullable = false, updatable = false)
     private LocalDateTime timestamp = LocalDateTime.now();
 
-    public Message(Long id, String content) {
-        this.id = id;
-        this.content = content;
-    }
+    @OneToMany(mappedBy = "message", cascade = CascadeType.ALL)
+    private List<Attachment> attachments = new ArrayList<>();
 
     public Message() {
 
@@ -81,5 +75,13 @@ public class Message {
 
     public void setTimestamp(LocalDateTime timestamp) {
         this.timestamp = timestamp;
+    }
+
+    public List<Attachment> getAttachments() {
+        return attachments;
+    }
+
+    public void setAttachments(List<Attachment> attachments) {
+        this.attachments = attachments;
     }
 }

@@ -1,13 +1,24 @@
 package com.evolt.chatapp.models.dto;
 
+import com.evolt.chatapp.models.Attachment;
 import com.evolt.chatapp.models.Message;
-import com.evolt.chatapp.models.User;
+
+import java.util.List;
 
 public class MessageDTO {
+
     private String content;
+
     private UserDTO sender;
+
     private String timestamp;
+
     private UserDTO receiver;
+
+    private List<String> attachmentUrls;
+
+    public MessageDTO() {
+    }
 
     public MessageDTO(String content, UserDTO sender) {
         this.content = content;
@@ -25,16 +36,28 @@ public class MessageDTO {
         this.sender = message.getSender();
         this.receiver = message.getReceiver();
         this.timestamp = message.getTimestamp();
+        this.attachmentUrls = message.getAttachmentUrls();
     }
 
     public MessageDTO(Message message) {
-        this.content = message.getContent();
-        this.sender = message.getSender();
-        this.receiver = message.getReceiver();
-        this.timestamp = String.valueOf(message.getTimestamp());
-    }
 
-    public MessageDTO() {
+        this.content = message.getContent();
+
+        this.sender = message.getSender() != null
+                ? new UserDTO(message.getSender())
+                : null;
+
+        this.receiver = message.getReceiver() != null
+                ? new UserDTO(message.getReceiver())
+                : null;
+
+        this.timestamp = String.valueOf(message.getTimestamp());
+
+        this.attachmentUrls =
+                message.getAttachments()
+                        .stream()
+                        .map(Attachment::getFileUrl)
+                        .toList();
     }
 
     public String getContent() {
@@ -69,4 +92,11 @@ public class MessageDTO {
         this.receiver = receiver;
     }
 
+    public List<String> getAttachmentUrls() {
+        return attachmentUrls;
+    }
+
+    public void setAttachmentUrls(List<String> attachmentUrls) {
+        this.attachmentUrls = attachmentUrls;
+    }
 }

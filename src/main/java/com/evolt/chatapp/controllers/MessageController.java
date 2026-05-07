@@ -9,7 +9,9 @@ import com.evolt.chatapp.services.UserService;
 import com.evolt.chatapp.websocket.ChatWebSocketHandler;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.List;
 
 @RestController
@@ -129,6 +131,41 @@ public class MessageController {
             User user = userService.findByUsername(username);
             var chats = messageService.getAllPrivateChatsForUser(user, page, size);
             return ResponseEntity.ok(chats);
+    }
+
+    @PostMapping("/send")
+    public ResponseEntity<MessageDTO> sendMessage(
+            @RequestParam String sender,
+            @RequestParam(required = false) String receiver,
+            @RequestParam(required = false) String content,
+            @RequestParam(required = false) MultipartFile file
+    ) throws IOException {
+
+        MessageDTO saved;
+
+        if (file != null && !file.isEmpty()) {
+
+            saved = messageService.saveMessageDTOFile(
+                    sender,
+                    receiver,
+                    content,
+                    null,
+                    file
+            );
+
+        } else {
+
+            saved = messageService.saveMessageDTO(
+                    sender,
+                    receiver,
+                    content,
+                    null
+            );
+        }
+
+        chatWebSocketHandler.notifyNewMessage(saved);
+
+        return ResponseEntity.ok(saved);
     }
 
 }
