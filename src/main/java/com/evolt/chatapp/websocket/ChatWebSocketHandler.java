@@ -61,7 +61,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
 
             try {
                 String message = objectMapper.writeValueAsString(
-                        new SocketPayloads.UserLeavePayload(username)
+                        new SocketPayloads.UserPayload("user_leave", username)
                 );
 
                 broadcast(message);
@@ -76,6 +76,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         try {
             String message = objectMapper.writeValueAsString(
                     new SocketPayloads.MessagePayload(
+                            "message",
                             messageDTO.getId(),
                             messageDTO.getSender(),
                             messageDTO.getReceiver(),
@@ -129,6 +130,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         userSessions.values().forEach(session -> {
             if (session.isOpen()) {
                 try {
+                    System.out.println("Poruka: " + message);
                     session.sendMessage(new TextMessage(message));
                 } catch (Exception e) {
                     e.printStackTrace();
