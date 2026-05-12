@@ -39,7 +39,7 @@ public class UserController {
         User user = new User(userDTO.getUsername());
         userService.saveUser(user);
         try {
-            chatWebSocketHandler.notifyNewUser(userDTO);
+            chatWebSocketHandler.notifyUserJoin(userDTO);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

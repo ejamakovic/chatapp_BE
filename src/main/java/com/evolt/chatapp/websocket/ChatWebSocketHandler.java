@@ -72,15 +72,6 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         }
     }
 
-    public void notifyNewUser(UserDTO userDTO) {
-        try {
-            String message = objectMapper.writeValueAsString(new SocketPayloads.UserPayload(userDTO));
-            broadcast(message);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
     public void notifyNewMessage(MessageDTO messageDTO) {
         try {
             String message = objectMapper.writeValueAsString(
@@ -94,6 +85,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
                     )
             );
 
+            System.out.println("Receiver: " + messageDTO.getReceiver()) ;
             if (messageDTO.getReceiver() == null) {
                 broadcast(message);
             } else {
