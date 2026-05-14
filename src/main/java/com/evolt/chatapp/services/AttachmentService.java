@@ -27,28 +27,39 @@ public class AttachmentService {
             Message message
     ) throws IOException {
 
-        String fileName = UUID.randomUUID()
-                + "_" +
-                file.getOriginalFilename();
+        String contentType = file.getContentType();
 
-        Path uploadPath = Paths.get("uploads");
-
-        if (!Files.exists(uploadPath)) {
-            Files.createDirectories(uploadPath);
+        if (contentType == null) {
+            throw new RuntimeException("Invalid file");
         }
 
-        Path filePath = uploadPath.resolve(fileName);
+        if (
+                !contentType.startsWith("image/") &&
+                        !contentType.startsWith("video/")
+        ) {
+            throw new RuntimeException("Unsupported file type");
+        }
+
+        String originalName = file.getOriginalFilename();
+        String fileName =
+                UUID.randomUUID() + "_" + originalName;
+        Path uploadDir = Paths.get("uploads");
+
+        if (!Files.exists(uploadDir)) {
+            Files.createDirectories(uploadDir);
+        }
+
+        Path path = uploadDir.resolve(fileName);
 
         Files.copy(
                 file.getInputStream(),
-                filePath,
+                path,
                 StandardCopyOption.REPLACE_EXISTING
         );
 
         Attachment attachment = new Attachment();
-
         attachment.setFileUrl("/uploads/" + fileName);
-        attachment.setFileType(file.getContentType());
+        attachment.setFileType(contentType);
         attachment.setMessage(message);
 
         return attachmentRepository.save(attachment);

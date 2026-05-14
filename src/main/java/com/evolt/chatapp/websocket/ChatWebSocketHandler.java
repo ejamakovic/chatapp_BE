@@ -2,7 +2,6 @@ package com.evolt.chatapp.websocket;
 
 import com.evolt.chatapp.models.dto.MessageDTO;
 import com.evolt.chatapp.models.dto.UserDTO;
-import com.evolt.chatapp.services.MessageService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
