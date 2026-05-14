@@ -1,8 +1,6 @@
 package com.evolt.chatapp.services;
 
-import com.evolt.chatapp.models.Attachment;
-import com.evolt.chatapp.models.Message;
-import com.evolt.chatapp.models.User;
+import com.evolt.chatapp.models.*;
 import com.evolt.chatapp.models.dto.MessageDTO;
 import com.evolt.chatapp.repositories.MessageRepository;
 import org.springframework.data.domain.Page;
@@ -21,11 +19,18 @@ public class MessageService {
     private final MessageRepository messageRepository;
     private final UserService userService;
     private final AttachmentService attachmentService;
+    private final ConversationService conversationService;
 
-    public MessageService(MessageRepository messageRepository, UserService userService, AttachmentService attachmentService) {
+    public MessageService(
+            MessageRepository messageRepository,
+            UserService userService,
+            AttachmentService attachmentService,
+            ConversationService conversationService
+    ) {
         this.messageRepository = messageRepository;
         this.userService = userService;
         this.attachmentService = attachmentService;
+        this.conversationService = conversationService;
     }
 
     public List<Message> getAllMessages() {
@@ -36,56 +41,38 @@ public class MessageService {
         return messageRepository.save(message);
     }
 
-    public MessageDTO saveMessageDTO(String senderUsername, String receiverUsername, String content, String timestamp) {
+    public MessageDTO saveMessageDTO(
+            Long senderId,
+            Long conversationId,
+            String content,
+            String timestamp
+    ) {
 
-        User sender = userService.findByUsername(senderUsername);
+        User sender = userService.findById(senderId);
 
-        User receiver = null;
-        if (receiverUsername != null) {
-            receiver = userService.findByUsername(receiverUsername);
-        }
+        Conversation conversation = conversationService.findConversationById(conversationId);
 
-        Message message = new Message(sender, receiver, content);
-        message.setTimestamp(
-                timestamp != null
-                        ? LocalDateTime.parse(timestamp)
-                        : LocalDateTime.now()
-        );
+        Message message = new Message(sender, conversation, content);
 
         return new MessageDTO(messageRepository.save(message));
     }
 
     public MessageDTO saveMessageDTOFile(
-            String senderUsername,
-            String receiverUsername,
+            Long senderId,
+            Long conversationId,
             String content,
             String timestamp,
             MultipartFile file
     ) throws IOException {
 
-        User sender = userService.findByUsername(senderUsername);
+        User sender = userService.findById(senderId);
 
-        User receiver = null;
+        Conversation conversation = conversationService.findConversationById(conversationId);
 
-        if (receiverUsername != null) {
-            receiver = userService.findByUsername(receiverUsername);
-        }
-
-        Message message = new Message();
-
-        message.setSender(sender);
-        message.setReceiver(receiver);
-        message.setContent(content);
-
-        message.setTimestamp(
-                timestamp != null
-                        ? LocalDateTime.parse(timestamp)
-                        : LocalDateTime.now()
-        );
+        Message message = new Message(sender, conversation, content);
 
         Message savedMessage = messageRepository.save(message);
 
-        // attachment
         if (file != null && !file.isEmpty()) {
 
             Attachment attachment =
@@ -93,21 +80,13 @@ public class MessageService {
                             file,
                             savedMessage
                     );
-
-            savedMessage
-                    .getAttachments()
-                    .add(attachment);
-
-            savedMessage = messageRepository.save(savedMessage);
         }
 
         return new MessageDTO(savedMessage);
     }
 
-    public List<Message> getPrivateChat(User sender, User receiver) {
-        return messageRepository.findBySenderAndReceiverOrReceiverAndSenderOrderByTimestampAsc(
-                sender, receiver, sender, receiver
-        );
+    public List<Message> getPrivateChat(Long senderId, Long conversationId) {
+        return messageRepository.
     }
 
     public List<Message> getGlobalChat() {
@@ -119,13 +98,14 @@ public class MessageService {
         return messageRepository.findByReceiverIsNull(pageable);
     }
 
+    // Need to search by conversation not sender and receiver!!!
     public Page<Message> findPrivateChat(User sender, User receiver, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
         return messageRepository.findPrivateChat(sender, receiver, pageable);
     }
 
-    public Page<Message> getAllPrivateChatsForUser(User sender, int page, int size) {
+    public Page<Message> getAllPrivateChatsForUser(User user, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
-        return messageRepository.findAllPrivateChatsFromUser(sender, pageable);
+        return messageRepository.findAllPrivateChatsFromUser(user, pageable);
     }
 }

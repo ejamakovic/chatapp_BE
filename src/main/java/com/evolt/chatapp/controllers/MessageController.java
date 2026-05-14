@@ -3,7 +3,6 @@ package com.evolt.chatapp.controllers;
 import com.evolt.chatapp.models.Message;
 import com.evolt.chatapp.models.User;
 import com.evolt.chatapp.models.dto.MessageDTO;
-import com.evolt.chatapp.models.dto.UserDTO;
 import com.evolt.chatapp.models.mappers.MessageMapper;
 import com.evolt.chatapp.services.MessageService;
 import com.evolt.chatapp.services.UserService;
@@ -75,49 +74,21 @@ public class MessageController {
         return ResponseEntity.ok(dtoPage);
     }
 
-    @PostMapping("/create")
-    public ResponseEntity<MessageDTO> createMessage(@RequestBody MessageDTO dto) {
-        try {
-            User sender = userService.findByUsername(dto.getSender().getUsername());
-
-            User receiver = dto.getReceiver() != null
-                    ? userService.findByUsername(dto.getReceiver().getUsername())
-                    : null;
-
-            Message msg = new Message();
-            msg.setSender(sender);
-            msg.setReceiver(receiver);
-            msg.setContent(dto.getContent());
-
-            messageService.saveMessage(msg);
-
-            MessageDTO responseDTO = MessageMapper.toDTO(msg);
-
-            chatWebSocketHandler.notifyNewMessage(responseDTO);
-
-            return ResponseEntity.ok(responseDTO);
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.internalServerError().build();
-        }
-    }
-
     @GetMapping("/allPrivateChats")
     public ResponseEntity<?> allPrivateChats(
-            @RequestParam String username,
+            @RequestParam Long userId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "30") int size)
     {
-            User user = userService.findByUsername(username);
+            User user = userService.findById(userId);
             var chats = messageService.getAllPrivateChatsForUser(user, page, size);
             return ResponseEntity.ok(chats);
     }
 
     @PostMapping("/send")
     public ResponseEntity<MessageDTO> sendMessage(
-            @RequestParam String sender,
-            @RequestParam(required = false) String receiver,
+            @RequestParam Long senderId,
+            @RequestParam(required = false) Long conversationId,
             @RequestParam(required = false) String content,
             @RequestParam(required = false) MultipartFile file
     ) throws IOException {
@@ -127,8 +98,8 @@ public class MessageController {
         if (file != null && !file.isEmpty()) {
 
             saved = messageService.saveMessageDTOFile(
-                    sender,
-                    receiver,
+                    senderId,
+                    conversationId,
                     content,
                     null,
                     file
@@ -137,8 +108,8 @@ public class MessageController {
         } else {
 
             saved = messageService.saveMessageDTO(
-                    sender,
-                    receiver,
+                    senderId,
+                    conversationId,
                     content,
                     null
             );

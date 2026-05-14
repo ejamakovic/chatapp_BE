@@ -5,7 +5,6 @@ import com.evolt.chatapp.models.Message;
 
 import java.time.LocalDateTime;
 import java.util.List;
-
 public class MessageDTO {
 
     private Long id;
@@ -14,7 +13,7 @@ public class MessageDTO {
 
     private UserDTO sender;
 
-    private UserDTO receiver;
+    private Long conversationId;
 
     private LocalDateTime timestamp;
 
@@ -23,15 +22,13 @@ public class MessageDTO {
     public MessageDTO() {
     }
 
-    public MessageDTO(String content, UserDTO sender) {
+    public MessageDTO(Long id, String content, UserDTO sender, Long conversationId, LocalDateTime timestamp, List<Attachment> attachments) {
+        this.id = id;
         this.content = content;
         this.sender = sender;
-    }
-
-    public MessageDTO(UserDTO sender, UserDTO receiver, String content) {
-        this.sender = sender;
-        this.receiver = receiver;
-        this.content = content;
+        this.conversationId = conversationId;
+        this.timestamp = timestamp;
+        this.attachments = attachments;
     }
 
     public MessageDTO(Message message) {
@@ -42,10 +39,6 @@ public class MessageDTO {
 
         this.sender = message.getSender() != null
                 ? new UserDTO(message.getSender())
-                : null;
-
-        this.receiver = message.getReceiver() != null
-                ? new UserDTO(message.getReceiver())
                 : null;
 
         this.timestamp = message.getTimestamp();
@@ -77,12 +70,12 @@ public class MessageDTO {
         this.sender = sender;
     }
 
-    public UserDTO getReceiver() {
-        return receiver;
+    public Long getConversationId() {
+        return conversationId;
     }
 
-    public void setReceiver(UserDTO receiver) {
-        this.receiver = receiver;
+    public void setConversationId(Long conversationId) {
+        this.conversationId = conversationId;
     }
 
     public LocalDateTime getTimestamp() {

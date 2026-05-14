@@ -20,9 +20,11 @@ public class Attachment {
 
     private String fileType;
 
+    private Long fileSize;
+
     @JsonIgnore
-    @ManyToOne
-    @JoinColumn(name = "message_id")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "message_id", nullable = false)
     private Message message;
 
     public Attachment(Long id, String fileUrl, String fileType, Message message) {
@@ -61,6 +63,14 @@ public class Attachment {
 
     public void setFileType(String fileType) {
         this.fileType = fileType;
+    }
+
+    public Long getFileSize() {
+        return fileSize;
+    }
+
+    public void setFileSize(Long fileSize) {
+        this.fileSize = fileSize;
     }
 
     public Message getMessage() {

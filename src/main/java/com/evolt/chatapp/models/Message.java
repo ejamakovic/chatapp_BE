@@ -9,9 +9,17 @@ import java.util.List;
 @Table(
         name = "messages",
         indexes = {
-                @Index(name = "idx_sender", columnList = "sender_id"),
-                @Index(name = "idx_receiver", columnList = "receiver_id"),
-                @Index(name = "idx_timestamp", columnList = "timestamp")
+                @Index(name = "idx_message_conversation",
+                        columnList = "conversation_id"),
+
+                @Index(name = "idx_message_sender",
+                        columnList = "sender_id"),
+
+                @Index(name = "idx_message_timestamp",
+                        columnList = "timestamp"),
+
+                @Index(name = "idx_conversation_timestamp",
+                        columnList = "conversation_id,timestamp")
         }
 )
 public class Message {
@@ -20,17 +28,25 @@ public class Message {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
-    @JoinColumn(name = "sender_id")
-    private User sender;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "conversation_id", nullable = false)
+    private Conversation conversation;
 
-    @ManyToOne
-    @JoinColumn(name = "receiver_id")
-    private User receiver;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "sender_id", nullable = false)
+    private User sender;
 
     @Column(columnDefinition = "TEXT")
     private String content;
 
+    @Enumerated(EnumType.STRING)
+    private MessageStatus status = MessageStatus.SENT;
+
+    //private boolean edited = false;
+
+    private boolean deleted = false;
+
+    @Column(nullable = false, updatable = false)
     private LocalDateTime timestamp = LocalDateTime.now();
 
     @OneToMany(
@@ -40,13 +56,46 @@ public class Message {
     )
     private List<Attachment> attachments = new ArrayList<>();
 
-    public Message() {
-
+    public Message(User sender, Conversation conversation, String content) {
+        this.sender = sender;
+        this.conversation = conversation;
+        this.content = content;
     }
 
-    public Message(User sender, User receiver, String content) {
+    public Message(
+            Long id,
+            Conversation conversation,
+            User sender,
+            String content,
+            MessageStatus status,
+            boolean deleted,
+            LocalDateTime timestamp,
+            List<Attachment> attachments) {
+        this.id = id;
+        this.conversation = conversation;
         this.sender = sender;
-        this.receiver = receiver;
+        this.content = content;
+        this.status = status;
+        this.deleted = deleted;
+        this.timestamp = timestamp;
+        this.attachments = attachments;
+    }
+
+    public Message(
+            Conversation conversation,
+            User sender, String content,
+            MessageStatus status,
+            boolean deleted) {
+        this.conversation = conversation;
+        this.sender = sender;
+        this.content = content;
+        this.status = status;
+        this.deleted = deleted;
+    }
+
+    public Message(Conversation conversation, User sender, String content) {
+        this.conversation = conversation;
+        this.sender = sender;
         this.content = content;
     }
 
@@ -66,20 +115,36 @@ public class Message {
         this.sender = sender;
     }
 
-    public User getReceiver() {
-        return receiver;
-    }
-
-    public void setReceiver(User receiver) {
-        this.receiver = receiver;
-    }
-
     public String getContent() {
         return content;
     }
 
     public void setContent(String content) {
         this.content = content;
+    }
+
+    public Conversation getConversation() {
+        return conversation;
+    }
+
+    public void setConversation(Conversation conversation) {
+        this.conversation = conversation;
+    }
+
+    public MessageStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(MessageStatus status) {
+        this.status = status;
+    }
+
+    public boolean isDeleted() {
+        return deleted;
+    }
+
+    public void setDeleted(boolean deleted) {
+        this.deleted = deleted;
     }
 
     public LocalDateTime getTimestamp() {
