@@ -1,5 +1,6 @@
 package com.evolt.chatapp.models;
 
+import com.evolt.chatapp.models.enums.MessageStatus;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -42,10 +43,6 @@ public class Message {
     @Enumerated(EnumType.STRING)
     private MessageStatus status = MessageStatus.SENT;
 
-    //private boolean edited = false;
-
-    private boolean deleted = false;
-
     @Column(nullable = false, updatable = false)
     private LocalDateTime timestamp = LocalDateTime.now();
 
@@ -68,7 +65,6 @@ public class Message {
             User sender,
             String content,
             MessageStatus status,
-            boolean deleted,
             LocalDateTime timestamp,
             List<Attachment> attachments) {
         this.id = id;
@@ -76,7 +72,6 @@ public class Message {
         this.sender = sender;
         this.content = content;
         this.status = status;
-        this.deleted = deleted;
         this.timestamp = timestamp;
         this.attachments = attachments;
     }
@@ -84,19 +79,21 @@ public class Message {
     public Message(
             Conversation conversation,
             User sender, String content,
-            MessageStatus status,
-            boolean deleted) {
+            MessageStatus status) {
         this.conversation = conversation;
         this.sender = sender;
         this.content = content;
         this.status = status;
-        this.deleted = deleted;
     }
 
     public Message(Conversation conversation, User sender, String content) {
         this.conversation = conversation;
         this.sender = sender;
         this.content = content;
+    }
+
+    public Message() {
+
     }
 
     public Long getId() {
@@ -137,14 +134,6 @@ public class Message {
 
     public void setStatus(MessageStatus status) {
         this.status = status;
-    }
-
-    public boolean isDeleted() {
-        return deleted;
-    }
-
-    public void setDeleted(boolean deleted) {
-        this.deleted = deleted;
     }
 
     public LocalDateTime getTimestamp() {

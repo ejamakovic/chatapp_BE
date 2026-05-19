@@ -15,11 +15,14 @@ import java.util.Map;
 @RequestMapping("/auth")
 public class AuthController {
 
-    @Autowired
     private JwtService jwtService;
 
-    @Autowired
     private UserService userService;
+
+    private AuthController(JwtService jwtService, UserService userService) {
+        this.jwtService = jwtService;
+        this.userService = userService;
+    }
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestParam String username,
@@ -32,13 +35,11 @@ public class AuthController {
                 user.getUsername()
         );
 
-        // cookie (za backend auth)
         Cookie cookie = new Cookie("token", token);
         cookie.setHttpOnly(true);
         cookie.setPath("/");
         response.addCookie(cookie);
 
-        // 🔥 direkt JSON response bez DTO
         return ResponseEntity.ok(
                 Map.of(
                         "token", token,

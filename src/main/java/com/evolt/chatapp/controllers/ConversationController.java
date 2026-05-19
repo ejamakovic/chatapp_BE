@@ -1,0 +1,38 @@
+package com.evolt.chatapp.controllers;
+
+import com.evolt.chatapp.models.Conversation;
+import com.evolt.chatapp.services.ConversationMemberService;
+import com.evolt.chatapp.services.ConversationService;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.Optional;
+
+@RestController
+@RequestMapping("/conversations")
+public class ConversationController {
+
+    private final ConversationService conversationService;
+    private final ConversationMemberService conversationMemberService;
+
+    public ConversationController(ConversationService conversationService, ConversationMemberService conversationMemberService) {
+        this.conversationService = conversationService;
+        this.conversationMemberService = conversationMemberService;
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<Optional<Conversation>> getConversation(@PathVariable Long id) {
+        return ResponseEntity.ok(conversationService.findConversationById(id));
+    }
+
+    @PostMapping("/create")
+    public ResponseEntity<Conversation> createConversation(@RequestBody Conversation conversation) {
+        return ResponseEntity.ok(conversationService.saveConversation(conversation));
+    }
+
+    @GetMapping("/global")
+    public ResponseEntity<Conversation> getConversationGlobal() {
+        return ResponseEntity.ok(conversationService.findGlobalConversation());
+    }
+
+}

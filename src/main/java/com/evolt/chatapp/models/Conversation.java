@@ -1,5 +1,6 @@
 package com.evolt.chatapp.models;
 
+import com.evolt.chatapp.models.enums.ConversationType;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
@@ -23,7 +24,7 @@ public class Conversation {
     private ConversationType type;
 
     @OneToMany(
-            mappedBy = "conversationMembers",
+            mappedBy = "conversation",
             cascade = CascadeType.ALL,
             orphanRemoval = true
     )
@@ -36,4 +37,72 @@ public class Conversation {
 
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
+
+    public Conversation() {
+
+    }
+
+    public Conversation(Long id, ConversationType type, List<ConversationMember> members, String name, String imageUrl, LocalDateTime createdAt) {
+        this.id = id;
+        this.type = type;
+        this.members = members;
+        this.name = name;
+        this.imageUrl = imageUrl;
+        this.createdAt = createdAt;
+    }
+
+    public Conversation(ConversationType type, List<ConversationMember> members, String name, String imageUrl) {
+        this.type = type;
+        this.members = members;
+        this.name = name;
+        this.imageUrl = imageUrl;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public ConversationType getType() {
+        return type;
+    }
+
+    public void setType(ConversationType type) {
+        this.type = type;
+    }
+
+    public List<ConversationMember> getMembers() {
+        return members;
+    }
+
+    public void setMembers(List<ConversationMember> members) {
+        this.members = members;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getImageUrl() {
+        return imageUrl;
+    }
+
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
 }

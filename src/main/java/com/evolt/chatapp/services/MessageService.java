@@ -10,8 +10,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class MessageService {
@@ -50,9 +50,13 @@ public class MessageService {
 
         User sender = userService.findById(senderId);
 
-        Conversation conversation = conversationService.findConversationById(conversationId);
+        Optional<Conversation> conversation = Optional.empty();
 
-        Message message = new Message(sender, conversation, content);
+        if (conversationId != null) {
+            conversation = conversationService.findConversationById(conversationId);
+        }
+
+        Message message = new Message(sender, conversation.orElse(null), content);
 
         return new MessageDTO(messageRepository.save(message));
     }
@@ -67,45 +71,37 @@ public class MessageService {
 
         User sender = userService.findById(senderId);
 
-        Conversation conversation = conversationService.findConversationById(conversationId);
+        Optional<Conversation> conversation = conversationService.findConversationById(conversationId);
 
-        Message message = new Message(sender, conversation, content);
+        Message message = new Message(sender, conversation.orElse(null), content);
 
         Message savedMessage = messageRepository.save(message);
 
         if (file != null && !file.isEmpty()) {
-
-            Attachment attachment =
-                    attachmentService.saveAttachment(
-                            file,
-                            savedMessage
-                    );
+            attachmentService.saveAttachment(
+                    file,
+                    savedMessage
+            );
         }
 
         return new MessageDTO(savedMessage);
     }
 
-    public List<Message> getPrivateChat(Long senderId, Long conversationId) {
-        return messageRepository.
-    }
-
-    public List<Message> getGlobalChat() {
-        return messageRepository.findByReceiverOrderByTimestampAsc(null);
-    }
-
-    public Page<Message> findGlobalChat(int page, int size) {
+    public Page<Message> getChat(Long conversationId, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
-        return messageRepository.findByReceiverIsNull(pageable);
+        return messageRepository.findPrivateChat(conversationId, pageable);
     }
 
-    // Need to search by conversation not sender and receiver!!!
-    public Page<Message> findPrivateChat(User sender, User receiver, int page, int size) {
-        Pageable pageable = PageRequest.of(page, size);
-        return messageRepository.findPrivateChat(sender, receiver, pageable);
+    public Optional<Message> findMessageById(Long id) {
+        return messageRepository.findById(id);
     }
 
-    public Page<Message> getAllPrivateChatsForUser(User user, int page, int size) {
+    public void deleteById(Long id) {
+        messageRepository.deleteById(id);
+    }
+
+    public Page<Message> getMessagesByConversation(Long id, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
-        return messageRepository.findAllPrivateChatsFromUser(user, pageable);
+        return messageRepository.findMessagesFromConversation(id, pageable);
     }
 }

@@ -1,5 +1,6 @@
 package com.evolt.chatapp.models;
 
+import com.evolt.chatapp.models.enums.ConversationRole;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;

@@ -1,43 +1,48 @@
 package com.evolt.chatapp.websocket;
 
 import com.evolt.chatapp.models.dto.MessageDTO;
+import com.evolt.chatapp.models.dto.UserDTO;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
-import java.util.*;
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Component
 public class ChatWebSocketHandler extends TextWebSocketHandler {
 
-    // username -> session
     private final Map<String, WebSocketSession> userSessions = new ConcurrentHashMap<>();
-
-    // conversationId -> users currently viewing chat
-    private final Map<Long, Set<String>> activeConversations = new ConcurrentHashMap<>();
 
     private final ObjectMapper objectMapper;
 
-    private void sendRaw(String username, String json) {
-
-        WebSocketSession session = userSessions.get(username);
-
-        if (session != null && session.isOpen()) {
-
-            try {
-                session.sendMessage(new TextMessage(json));
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-    }
+    private static final Logger logger =
+            LoggerFactory.getLogger(ChatWebSocketHandler.class);
 
     public ChatWebSocketHandler(ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
+    }
+
+    // SEND RAW
+    private void sendRaw(String username, Object payload) {
+        WebSocketSession session = userSessions.get(username);
+
+        if (session == null || !session.isOpen()) return;
+
+        try {
+            session.sendMessage(
+                    new TextMessage(objectMapper.writeValueAsString(payload))
+            );
+        } catch (IOException e) {
+            logger.error("Failed to send WS message to {}", username, e);
+        }
     }
 
     // CONNECT
@@ -46,11 +51,14 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
 
         String username = (String) session.getAttributes().get("username");
 
-        if (username != null) {
-            userSessions.put(username, session);
-        }
-    }
+        if (username == null) return;
 
+        userSessions.put(username, session);
+
+        logger.info("User connected: {}", username);
+
+        notifyUserOnline(new UserDTO(username));
+    }
 
     // DISCONNECT
     @Override
@@ -58,135 +66,56 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
 
         String username = (String) session.getAttributes().get("username");
 
-        if (username != null) {
+        if (username == null) return;
 
-            userSessions.remove(username);
+        userSessions.remove(username);
 
-            // ukloni iz svih active conversations
-            activeConversations.values().forEach(set -> set.remove(username));
-        }
+        logger.info("User disconnected: {}", username);
     }
 
-    // JOIN CHAT ROOM
-    public void joinConversation(Long conversationId, String username) {
-
-        activeConversations
-                .computeIfAbsent(conversationId, k -> ConcurrentHashMap.newKeySet())
-                .add(username);
+    // BROADCAST ALL USERS
+    private void sendToAll(Object payload) {
+        userSessions.keySet().forEach(user -> sendRaw(user, payload));
     }
 
-    // LEAVE CHAT ROOM
-    public void leaveConversation(Long conversationId, String username) {
-
-        Set<String> users = activeConversations.get(conversationId);
-
-        if (users != null) {
-            users.remove(username);
-        }
+    // USER ONLINE EVEN
+    public void notifyUserOnline(UserDTO userDTO) {
+        sendToAll(new SocketPayloads.UserPayload("ONLINE", userDTO));
     }
 
-    // MAIN MESSAGE EVENT
+    // NEW MESSAGE
     public void notifyNewMessage(MessageDTO messageDTO) {
 
+        System.out.println("Message id " + messageDTO.getAttachments());
         try {
+            List<String> attachments =
+                    messageDTO.getAttachments() == null
+                            ? List.of()
+                            : messageDTO.getAttachments()
+                            .stream()
+                            .map(a -> a.getFileUrl())
+                            .toList();
 
-            Long conversationId = messageDTO.getConversationId();
-
-            Set<String> activeUsers =
-                    activeConversations.getOrDefault(
-                            conversationId,
-                            new HashSet<>()
-                    );
-
-            // 1. build MESSAGE payload
-            SocketPayloads.MessagePayload messagePayload =
+            SocketPayloads.MessagePayload payload =
                     new SocketPayloads.MessagePayload(
                             messageDTO.getId(),
                             messageDTO.getConversationId(),
                             messageDTO.getSender(),
                             messageDTO.getContent(),
                             messageDTO.getTimestamp(),
-                            messageDTO.getAttachments()
-                                    .stream()
-                                    .map(a -> a.getFileUrl())
-                                    .toList()
+                            attachments
                     );
 
-            String messageJson = objectMapper.writeValueAsString(messagePayload);
-
-            // 2. send LIVE message to active users
-            for (String username : activeUsers) {
-                sendRaw(username, messageJson);
-            }
-
-            // 3. send NOTIFICATIONS to inactive users
-            notifyInactiveUsers(conversationId, messagePayload, activeUsers);
+            // SEND TO EVERY CONNECTED USER
+            sendToAll(payload);
 
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error(
+                    "WS message error sender={}, conversation={}",
+                    messageDTO.getSender(),
+                    messageDTO.getConversationId(),
+                    e
+            );
         }
-    }
-
-    // NOTIFICATIONS
-    private void notifyInactiveUsers(
-            Long conversationId,
-            SocketPayloads.MessagePayload messagePayload,
-            Set<String> activeUsers
-    ) {
-
-        try {
-
-            List<String> allMembers =
-                    getConversationMembers(conversationId);
-
-            for (String user : allMembers) {
-
-                if (!activeUsers.contains(user)) {
-
-                    SocketPayloads.NotificationPayload notification =
-                            new SocketPayloads.NotificationPayload(
-                                    conversationId,
-                                    "New message",
-                                    messagePayload.content,
-                                    messagePayload.messageId,
-                                    null,
-                                    messagePayload.sender
-                            );
-
-                    String json = objectMapper.writeValueAsString(notification);
-
-                    sendRaw(user, json);
-                }
-            }
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    // SEND TO SINGLE USER
-    private void sendToUser(String username, Object message) {
-
-        WebSocketSession session = userSessions.get(username);
-
-        if (session != null && session.isOpen()) {
-
-            try {
-                session.sendMessage(
-                        new TextMessage(
-                                objectMapper.writeValueAsString(message)
-                        )
-                );
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
-    // GET MEMBERS (stub - zamijeni servisom)
-    private List<String> getConversationMembers(Long conversationId) {
-
-        // TODO: zamijeni sa ConversationMemberService / DB query
-        return new ArrayList<>();
     }
 }

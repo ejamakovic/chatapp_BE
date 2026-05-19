@@ -3,24 +3,19 @@ package com.evolt.chatapp.controllers;
 import com.evolt.chatapp.models.User;
 import com.evolt.chatapp.models.dto.UserDTO;
 import com.evolt.chatapp.services.UserService;
-import com.evolt.chatapp.websocket.ChatWebSocketHandler;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-
-import static java.lang.System.*;
 
 @RestController
 @RequestMapping("/users")
 public class UserController {
 
     private final UserService userService;
-    private final ChatWebSocketHandler chatWebSocketHandler;
 
-    public UserController(UserService userService, ChatWebSocketHandler chatWebSocketHandler) {
+    public UserController(UserService userService) {
         this.userService = userService;
-        this.chatWebSocketHandler = chatWebSocketHandler;
     }
 
     @GetMapping
@@ -38,11 +33,6 @@ public class UserController {
         System.out.println("LOGIN: ");
         User user = new User(userDTO.getUsername());
         userService.saveUser(user);
-        try {
-            chatWebSocketHandler.notifyUserJoin(userDTO);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
         return ResponseEntity.ok(user);
     }
 

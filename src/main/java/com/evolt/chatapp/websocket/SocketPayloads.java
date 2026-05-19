@@ -11,16 +11,15 @@ public class SocketPayloads {
     // USER EVENTS
     public static class UserPayload {
 
-        public String type; // user_join, user_leave
+        public String status = "JOINED";
         public UserDTO user;
 
-        public UserPayload(String type, UserDTO user) {
-            this.type = type;
+        public UserPayload(String status, UserDTO user) {
+            this.status = status;
             this.user = user;
         }
 
         public UserPayload(UserDTO user) {
-            this.type = "user_join";
             this.user = user;
         }
     }
@@ -30,7 +29,7 @@ public class SocketPayloads {
 
         public String type = "message";
 
-        public Long messageId;
+        public Long id;
 
         public Long conversationId;
 
@@ -40,42 +39,42 @@ public class SocketPayloads {
 
         public LocalDateTime timestamp;
 
-        public List<String> attachmentUrls = new ArrayList<>();
+        public List<String> attachments = new ArrayList<>();
 
         public MessagePayload() {}
 
         public MessagePayload(
-                Long messageId,
+                Long id,
                 Long conversationId,
                 UserDTO sender,
                 String content,
                 LocalDateTime timestamp,
-                List<String> attachmentUrls
+                List<String> attachments
         ) {
-            this.messageId = messageId;
+            this.id = id;
             this.conversationId = conversationId;
             this.sender = sender;
             this.content = content;
             this.timestamp = timestamp;
-            this.attachmentUrls = attachmentUrls;
+            this.attachments = attachments;
         }
 
         public MessagePayload(
                 String type,
-                Long messageId,
+                Long id,
                 Long conversationId,
                 UserDTO sender,
                 String content,
                 LocalDateTime timestamp,
-                List<String> attachmentUrls
+                List<String> attachments
         ) {
             this.type = type;
-            this.messageId = messageId;
+            this.id = id;
             this.conversationId = conversationId;
             this.sender = sender;
             this.content = content;
             this.timestamp = timestamp;
-            this.attachmentUrls = attachmentUrls;
+            this.attachments = attachments;
         }
     }
 
