@@ -1,17 +1,27 @@
 package com.evolt.chatapp.services;
 
+import com.evolt.chatapp.models.Conversation;
+import com.evolt.chatapp.models.ConversationMember;
 import com.evolt.chatapp.models.User;
+import com.evolt.chatapp.models.enums.ConversationRole;
+import com.evolt.chatapp.repositories.ConversationMemberRepository;
+import com.evolt.chatapp.repositories.ConversationRepository;
 import com.evolt.chatapp.repositories.UserRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public class UserService {
     private final UserRepository userRepository;
-    public UserService(UserRepository userRepository) {
+    private final ConversationRepository conversationRepository;
+    private final ConversationMemberRepository conversationMemberRepository;
+
+
+    public UserService(UserRepository userRepository, ConversationRepository conversationRepository, ConversationMemberRepository conversationMemberRepository) {
         this.userRepository = userRepository;
+        this.conversationRepository = conversationRepository;
+        this.conversationMemberRepository = conversationMemberRepository;
     }
     public List<User> getAllUsers() {
         return userRepository.findAll();
@@ -22,8 +32,7 @@ public class UserService {
     }
 
     public User saveUser(User user) {
-        userRepository.save(user);
-        return user;
+        return userRepository.save(user);
     }
 
     public User findById(Long id) {
@@ -34,22 +43,15 @@ public class UserService {
         return userRepository.findByUsername(username);
     }
 
-    public User createIfNotExists(String id, String username) {
-        return userRepository.findById(Long.valueOf(id))
-                .orElseGet(() -> {
-                    User u = new User();
-                    u.setId(Long.valueOf(id));
-                    u.setUsername(username);
-                    u.setConnected(true);
-                    return userRepository.save(u);
-                });
-    }
-
     public User createIfNotExists(String username) {
-        Optional<User> user = Optional.ofNullable(userRepository.findByUsername(username));
-        if(user.isPresent()) {
-            return user.orElse(null);
+        User user = userRepository.findByUsername(username);
+        if (user != null) {
+            return user;
         }
-        return saveUser(new User(username));
+        user = saveUser(new User(username));
+        Conversation conversation = conversationRepository.findGlobalConversation();
+        ConversationMember conversationMember = new ConversationMember(conversation , user, ConversationRole.MEMBER);
+        conversationMemberRepository.save(conversationMember);
+        return user;
     }
 }

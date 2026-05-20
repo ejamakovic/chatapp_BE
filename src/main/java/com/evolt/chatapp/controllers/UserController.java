@@ -1,7 +1,12 @@
 package com.evolt.chatapp.controllers;
 
+import com.evolt.chatapp.models.Conversation;
+import com.evolt.chatapp.models.ConversationMember;
 import com.evolt.chatapp.models.User;
 import com.evolt.chatapp.models.dto.UserDTO;
+import com.evolt.chatapp.models.enums.ConversationRole;
+import com.evolt.chatapp.services.ConversationMemberService;
+import com.evolt.chatapp.services.ConversationService;
 import com.evolt.chatapp.services.UserService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -30,10 +35,7 @@ public class UserController {
 
     @PostMapping("/create")
     public ResponseEntity<User> createUser(@RequestBody UserDTO userDTO) {
-        System.out.println("LOGIN: ");
-        User user = new User(userDTO.getUsername());
-        userService.saveUser(user);
-        return ResponseEntity.ok(user);
+        return ResponseEntity.ok(userService.createIfNotExists(userDTO.getUsername()));
     }
 
     @PostMapping("/logout")

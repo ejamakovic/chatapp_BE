@@ -1,7 +1,9 @@
 package com.evolt.chatapp.websocket;
 
+import com.evolt.chatapp.models.ConversationMember;
 import com.evolt.chatapp.models.dto.MessageDTO;
 import com.evolt.chatapp.models.dto.UserDTO;
+import com.evolt.chatapp.services.ConversationMemberService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,6 +14,7 @@ import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -24,9 +27,16 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
 
     private static final Logger logger =
             LoggerFactory.getLogger(ChatWebSocketHandler.class);
+    
+    private final ConversationMemberService conversationMemberService;
 
-    public ChatWebSocketHandler(ObjectMapper objectMapper) {
+    private void sendToUser(String username, Object payload) {
+        sendRaw(username, payload);
+    }
+
+    public ChatWebSocketHandler(ObjectMapper objectMapper, ConversationMemberService conversationMemberService) {
         this.objectMapper = objectMapper;
+        this.conversationMemberService = conversationMemberService;
     }
 
     // SEND RAW
@@ -85,7 +95,6 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
     // NEW MESSAGE
     public void notifyNewMessage(MessageDTO messageDTO) {
 
-        System.out.println("Message id " + messageDTO.getAttachments());
         try {
 
             SocketPayloads.MessagePayload payload =
@@ -98,15 +107,26 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
                             messageDTO.getAttachments()
                     );
 
-            sendToAll(payload);
+            List<String> participants =
+                    conversationMemberService.getParticipants(
+                            messageDTO.getConversationId()
+                    );
+
+            for (String username : participants) {
+
+                if (userSessions.containsKey(username)) {
+                    sendToUser(username, payload);
+                }
+            }
 
         } catch (Exception e) {
+
             logger.error(
-                    "WS message error sender={}, conversation={}",
-                    messageDTO.getSender(),
+                    "WS message error conversation={}",
                     messageDTO.getConversationId(),
                     e
             );
         }
     }
+
 }

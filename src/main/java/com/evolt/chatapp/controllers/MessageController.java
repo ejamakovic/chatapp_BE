@@ -59,20 +59,6 @@ public class MessageController {
         return ResponseEntity.ok(dtoPage);
     }
 
-    @GetMapping("/private")
-    public ResponseEntity<?> getPrivateChat(
-            @RequestParam Long conversationId,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "30") int size
-    ) {
-
-        var messagesPage = messageService.getChat(conversationId, page, size);
-
-        var dtoPage = messagesPage.map(MessageMapper::toDTO);
-
-        return ResponseEntity.ok(dtoPage);
-    }
-
     @PostMapping("/send")
     public ResponseEntity<MessageDTO> sendMessage(
             @RequestParam Long senderId,

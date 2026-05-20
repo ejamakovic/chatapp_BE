@@ -13,28 +13,11 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
 
     @EntityGraph(attributePaths = "attachments")
     @Query("""
-    SELECT m
-    FROM Message m
-    WHERE m.conversation.id = :id
-    ORDER BY m.timestamp DESC
-""")
-    Page<Message> findPrivateChat(Long conversationId, Pageable pageable);
-
-    @Query("""
     SELECT m from Message m
     WHERE m.conversation.id = :id
     ORDER BY m.timestamp DESC
 """)
     Page<Message> findMessagesFromConversation(Long id, Pageable pageable);
-
-    @EntityGraph(attributePaths = "attachments")
-    @Query("""
-    SELECT m from Message m
-    WHERE m.conversation.id = :id
-    ORDER BY m.timestamp DESC
-""")
-    Page<Message> findMessagesFromConversationAtt(Long id, Pageable pageable);
-
 
 }
 

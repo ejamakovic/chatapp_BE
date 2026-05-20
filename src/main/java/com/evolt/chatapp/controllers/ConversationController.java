@@ -21,7 +21,7 @@ public class ConversationController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Optional<Conversation>> getConversation(@PathVariable Long id) {
+    public ResponseEntity<Conversation> getConversation(@PathVariable Long id) {
         return ResponseEntity.ok(conversationService.findConversationById(id));
     }
 
@@ -32,7 +32,7 @@ public class ConversationController {
 
     @GetMapping("/global")
     public ResponseEntity<Conversation> getConversationGlobal() {
-        return ResponseEntity.ok(conversationService.findGlobalConversation());
+        return ResponseEntity.ok(conversationService.findOrCreateGlobalConversation());
     }
 
 }

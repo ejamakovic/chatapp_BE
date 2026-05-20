@@ -55,12 +55,12 @@ public class MessageService {
 
         User sender = userService.findById(senderId);
 
-        Optional<Conversation> conversation =
+        Conversation conversation =
                 conversationService.findConversationById(conversationId);
 
         Message message = new Message(
                 sender,
-                conversation.orElse(null),
+                conversation,
                 content
         );
 
@@ -96,10 +96,6 @@ public class MessageService {
         return messageDTO;
     }
 
-    public Page<Message> getChat(Long conversationId, int page, int size) {
-        Pageable pageable = PageRequest.of(page, size);
-        return messageRepository.findPrivateChat(conversationId, pageable);
-    }
 
     public Optional<Message> findMessageById(Long id) {
         return messageRepository.findById(id);
@@ -109,8 +105,8 @@ public class MessageService {
         messageRepository.deleteById(id);
     }
 
-    public Page<Message> getMessagesByConversation(Long id, int page, int size) {
+    public Page<Message> getMessagesByConversation(Long conversationId, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
-        return messageRepository.findMessagesFromConversation(id, pageable);
+        return messageRepository.findMessagesFromConversation(conversationId, pageable);
     }
 }

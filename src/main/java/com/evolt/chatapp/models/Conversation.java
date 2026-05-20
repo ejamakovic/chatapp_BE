@@ -1,6 +1,7 @@
 package com.evolt.chatapp.models;
 
 import com.evolt.chatapp.models.enums.ConversationType;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
@@ -23,6 +24,7 @@ public class Conversation {
     @Column(nullable = false)
     private ConversationType type;
 
+    @JsonIgnore
     @OneToMany(
             mappedBy = "conversation",
             cascade = CascadeType.ALL,
@@ -40,6 +42,11 @@ public class Conversation {
 
     public Conversation() {
 
+    }
+
+    public Conversation(Long id, ConversationType type) {
+        this.id = id;
+        this.type = type;
     }
 
     public Conversation(Long id, ConversationType type, List<ConversationMember> members, String name, String imageUrl, LocalDateTime createdAt) {
