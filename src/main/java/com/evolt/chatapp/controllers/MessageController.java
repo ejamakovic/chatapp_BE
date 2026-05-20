@@ -4,14 +4,12 @@ import com.evolt.chatapp.models.Message;
 import com.evolt.chatapp.models.dto.MessageDTO;
 import com.evolt.chatapp.models.mappers.MessageMapper;
 import com.evolt.chatapp.services.MessageService;
-import com.evolt.chatapp.websocket.ChatWebSocketHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 
@@ -20,12 +18,10 @@ import java.util.Optional;
 public class MessageController {
 
     private final MessageService messageService;
-    private final ChatWebSocketHandler chatWebSocketHandler;
     private static final Logger logger = LoggerFactory.getLogger(MessageController.class);
 
-    public MessageController(MessageService messageService, ChatWebSocketHandler chatWebSocketHandler) {
+    public MessageController(MessageService messageService) {
         this.messageService = messageService;
-        this.chatWebSocketHandler = chatWebSocketHandler;
     }
 
     @GetMapping
@@ -80,36 +76,20 @@ public class MessageController {
     @PostMapping("/send")
     public ResponseEntity<MessageDTO> sendMessage(
             @RequestParam Long senderId,
-            @RequestParam(required = false) Long conversationId,
-            @RequestParam(required = false) String content,
-            @RequestParam(required = false) MultipartFile file
-    ) throws IOException {
+            @RequestParam Long conversationId,
+            @RequestParam String content,
+            @RequestParam(required = false) List<MultipartFile> files
+    ) {
 
-        MessageDTO saved;
+        MessageDTO dto = messageService.saveMessageDTO(
+                senderId,
+                conversationId,
+                content,
+                null,
+                files
+        );
 
-        if (file != null && !file.isEmpty()) {
-
-            saved = messageService.saveMessageDTOFile(
-                    senderId,
-                    conversationId,
-                    content,
-                    null,
-                    file
-            );
-
-        } else {
-
-            saved = messageService.saveMessageDTO(
-                    senderId,
-                    conversationId,
-                    content,
-                    null
-            );
-        }
-
-        chatWebSocketHandler.notifyNewMessage(saved);
-
-        return ResponseEntity.ok(saved);
+        return ResponseEntity.ok(dto);
     }
 
 }

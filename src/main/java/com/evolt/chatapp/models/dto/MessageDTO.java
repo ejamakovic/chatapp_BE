@@ -2,9 +2,9 @@ package com.evolt.chatapp.models.dto;
 
 import com.evolt.chatapp.models.Attachment;
 import com.evolt.chatapp.models.Message;
-import com.evolt.chatapp.models.User;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 public class MessageDTO {
 
@@ -18,7 +18,7 @@ public class MessageDTO {
 
     private LocalDateTime timestamp;
 
-    private List<Attachment> attachments;
+    private List<AttachmentDTO> attachments;
 
     public MessageDTO() {
     }
@@ -31,7 +31,12 @@ public class MessageDTO {
                 ? new UserDTO(message.getSender())
                 : null;
         this.timestamp = message.getTimestamp();
-        this.attachments = message.getAttachments();
+        List<AttachmentDTO> list = new ArrayList<>();
+        for (Attachment attachment : message.getAttachments()) {
+            AttachmentDTO attachmentDTO = new AttachmentDTO(attachment);
+            list.add(attachmentDTO);
+        }
+        this.attachments = list;
         this.conversationId = message.getConversation().getId();
     }
 
@@ -75,11 +80,11 @@ public class MessageDTO {
         this.timestamp = timestamp;
     }
 
-    public List<Attachment> getAttachments() {
+    public List<AttachmentDTO> getAttachments() {
         return attachments;
     }
 
-    public void setAttachments(List<Attachment> attachments) {
+    public void setAttachments(List<AttachmentDTO> attachments) {
         this.attachments = attachments;
     }
 }

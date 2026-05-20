@@ -1,5 +1,6 @@
 package com.evolt.chatapp.websocket;
 
+import com.evolt.chatapp.models.dto.AttachmentDTO;
 import com.evolt.chatapp.models.dto.UserDTO;
 
 import java.time.LocalDateTime;
@@ -39,7 +40,7 @@ public class SocketPayloads {
 
         public LocalDateTime timestamp;
 
-        public List<String> attachments = new ArrayList<>();
+        public List<AttachmentDTO> attachments = new ArrayList<>();
 
         public MessagePayload() {}
 
@@ -49,26 +50,8 @@ public class SocketPayloads {
                 UserDTO sender,
                 String content,
                 LocalDateTime timestamp,
-                List<String> attachments
+                List<AttachmentDTO> attachments
         ) {
-            this.id = id;
-            this.conversationId = conversationId;
-            this.sender = sender;
-            this.content = content;
-            this.timestamp = timestamp;
-            this.attachments = attachments;
-        }
-
-        public MessagePayload(
-                String type,
-                Long id,
-                Long conversationId,
-                UserDTO sender,
-                String content,
-                LocalDateTime timestamp,
-                List<String> attachments
-        ) {
-            this.type = type;
             this.id = id;
             this.conversationId = conversationId;
             this.sender = sender;

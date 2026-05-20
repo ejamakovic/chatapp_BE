@@ -3,6 +3,7 @@ package com.evolt.chatapp.services;
 import com.evolt.chatapp.models.*;
 import com.evolt.chatapp.models.dto.MessageDTO;
 import com.evolt.chatapp.repositories.MessageRepository;
+import com.evolt.chatapp.websocket.ChatWebSocketHandler;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -20,17 +21,20 @@ public class MessageService {
     private final UserService userService;
     private final AttachmentService attachmentService;
     private final ConversationService conversationService;
+    private final ChatWebSocketHandler chatWebSocketHandler;
 
     public MessageService(
             MessageRepository messageRepository,
             UserService userService,
             AttachmentService attachmentService,
-            ConversationService conversationService
+            ConversationService conversationService,
+            ChatWebSocketHandler chatWebSocketHandler
     ) {
         this.messageRepository = messageRepository;
         this.userService = userService;
         this.attachmentService = attachmentService;
         this.conversationService = conversationService;
+        this.chatWebSocketHandler = chatWebSocketHandler;
     }
 
     public List<Message> getAllMessages() {
@@ -45,46 +49,51 @@ public class MessageService {
             Long senderId,
             Long conversationId,
             String content,
-            String timestamp
+            String timestamp,
+            List<MultipartFile> files
     ) {
 
         User sender = userService.findById(senderId);
 
-        Optional<Conversation> conversation = Optional.empty();
+        Optional<Conversation> conversation =
+                conversationService.findConversationById(conversationId);
 
-        if (conversationId != null) {
-            conversation = conversationService.findConversationById(conversationId);
-        }
-
-        Message message = new Message(sender, conversation.orElse(null), content);
-
-        return new MessageDTO(messageRepository.save(message));
-    }
-
-    public MessageDTO saveMessageDTOFile(
-            Long senderId,
-            Long conversationId,
-            String content,
-            String timestamp,
-            MultipartFile file
-    ) throws IOException {
-
-        User sender = userService.findById(senderId);
-
-        Optional<Conversation> conversation = conversationService.findConversationById(conversationId);
-
-        Message message = new Message(sender, conversation.orElse(null), content);
+        Message message = new Message(
+                sender,
+                conversation.orElse(null),
+                content
+        );
 
         Message savedMessage = messageRepository.save(message);
 
-        if (file != null && !file.isEmpty()) {
-            attachmentService.saveAttachment(
-                    file,
-                    savedMessage
-            );
+        // Save all files (images/videos)
+        if (files != null && !files.isEmpty()) {
+
+            for (MultipartFile file : files) {
+
+                if (file != null && !file.isEmpty()) {
+
+                    try {
+                        Attachment attachment = attachmentService.saveAttachment(
+                                file,
+                                savedMessage
+                        );
+
+                        savedMessage.getAttachments().add(attachment);
+
+                    } catch (IOException e) {
+                        throw new RuntimeException(
+                                "Failed to save attachment: " + file.getOriginalFilename(),
+                                e
+                        );
+                    }
+                }
+            }
         }
 
-        return new MessageDTO(savedMessage);
+        MessageDTO messageDTO = new MessageDTO(savedMessage);
+        chatWebSocketHandler.notifyNewMessage(messageDTO);
+        return messageDTO;
     }
 
     public Page<Message> getChat(Long conversationId, int page, int size) {

@@ -12,7 +12,6 @@ import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -88,13 +87,6 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
 
         System.out.println("Message id " + messageDTO.getAttachments());
         try {
-            List<String> attachments =
-                    messageDTO.getAttachments() == null
-                            ? List.of()
-                            : messageDTO.getAttachments()
-                            .stream()
-                            .map(a -> a.getFileUrl())
-                            .toList();
 
             SocketPayloads.MessagePayload payload =
                     new SocketPayloads.MessagePayload(
@@ -103,10 +95,9 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
                             messageDTO.getSender(),
                             messageDTO.getContent(),
                             messageDTO.getTimestamp(),
-                            attachments
+                            messageDTO.getAttachments()
                     );
 
-            // SEND TO EVERY CONNECTED USER
             sendToAll(payload);
 
         } catch (Exception e) {
