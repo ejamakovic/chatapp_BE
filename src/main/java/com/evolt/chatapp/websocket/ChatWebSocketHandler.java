@@ -80,6 +80,8 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         userSessions.remove(username);
 
         logger.info("User disconnected: {}", username);
+
+        notifyUserOffline(new UserDTO(username));
     }
 
     // BROADCAST ALL USERS
@@ -87,9 +89,14 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         userSessions.keySet().forEach(user -> sendRaw(user, payload));
     }
 
-    // USER ONLINE EVEN
+    // USER ONLINE EVENT
     public void notifyUserOnline(UserDTO userDTO) {
-        sendToAll(new SocketPayloads.UserPayload("ONLINE", userDTO));
+        sendToAll(new SocketPayloads.UserPayload(userDTO));
+    }
+
+    // USER OFFLINE EVENT
+    public void notifyUserOffline(UserDTO userDTO) {
+        sendToAll(new SocketPayloads.UserPayload("user_leave", userDTO));
     }
 
     // NEW MESSAGE

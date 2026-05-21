@@ -53,9 +53,7 @@ public class MessageController {
             @RequestParam(defaultValue = "30") int size
     ) {
         var messagesPage = messageService.getMessagesByConversation(id, page, size);
-
         var dtoPage = messagesPage.map(MessageMapper::toDTO);
-
         return ResponseEntity.ok(dtoPage);
     }
 
@@ -66,7 +64,6 @@ public class MessageController {
             @RequestParam String content,
             @RequestParam(required = false) List<MultipartFile> files
     ) {
-
         MessageDTO dto = messageService.saveMessageDTO(
                 senderId,
                 conversationId,
@@ -74,7 +71,6 @@ public class MessageController {
                 null,
                 files
         );
-
         return ResponseEntity.ok(dto);
     }
 

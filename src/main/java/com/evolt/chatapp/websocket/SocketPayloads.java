@@ -12,11 +12,11 @@ public class SocketPayloads {
     // USER EVENTS
     public static class UserPayload {
 
-        public String status = "JOINED";
+        public String type = "user_join";
         public UserDTO user;
 
-        public UserPayload(String status, UserDTO user) {
-            this.status = status;
+        public UserPayload(String type, UserDTO user) {
+            this.type = type;
             this.user = user;
         }
 

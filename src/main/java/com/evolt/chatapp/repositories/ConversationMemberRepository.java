@@ -15,11 +15,10 @@ public interface ConversationMemberRepository extends JpaRepository<Conversation
     @Query("""
     SELECT DISTINCT cm.conversation
         FROM ConversationMember cm
-        WHERE cm.user = :user
+        WHERE cm.user.id = :userId
         ORDER BY cm.conversation.createdAt DESC
 """)
-    Page<Conversation> findUserConversations(User user, Pageable pageable);
-
+    Page<Conversation> findUserConversations(Long userId, Pageable pageable);
 
     @Query("""
     SELECT DISTINCT cm.user.username FROM ConversationMember cm
