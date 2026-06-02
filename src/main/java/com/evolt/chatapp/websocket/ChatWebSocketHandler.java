@@ -4,6 +4,7 @@ import com.evolt.chatapp.models.ConversationMember;
 import com.evolt.chatapp.models.dto.MessageDTO;
 import com.evolt.chatapp.models.dto.UserDTO;
 import com.evolt.chatapp.services.ConversationMemberService;
+import com.evolt.chatapp.services.UserService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,6 +26,8 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
 
     private final ObjectMapper objectMapper;
 
+    private final UserService userService;
+
     private static final Logger logger =
             LoggerFactory.getLogger(ChatWebSocketHandler.class);
     
@@ -34,9 +37,10 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         sendRaw(username, payload);
     }
 
-    public ChatWebSocketHandler(ObjectMapper objectMapper, ConversationMemberService conversationMemberService) {
+    public ChatWebSocketHandler(ObjectMapper objectMapper, ConversationMemberService conversationMemberService, UserService userService) {
         this.objectMapper = objectMapper;
         this.conversationMemberService = conversationMemberService;
+        this.userService = userService;
     }
 
     // SEND RAW
@@ -64,6 +68,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
 
         userSessions.put(username, session);
 
+        userService.setConnected(username, true);
         logger.info("User connected: {}", username);
 
         notifyUserOnline(new UserDTO(username));
@@ -71,14 +76,19 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
 
     // DISCONNECT
     @Override
-    public void afterConnectionClosed(WebSocketSession session, CloseStatus status) {
+    public void afterConnectionClosed(
+            WebSocketSession session,
+            CloseStatus status
+    ) {
 
-        String username = (String) session.getAttributes().get("username");
+        String username =
+                (String) session.getAttributes().get("username");
 
         if (username == null) return;
 
         userSessions.remove(username);
 
+        userService.setConnected(username, false);
         logger.info("User disconnected: {}", username);
 
         notifyUserOffline(new UserDTO(username));

@@ -7,6 +7,7 @@ import com.evolt.chatapp.models.enums.ConversationRole;
 import com.evolt.chatapp.repositories.ConversationMemberRepository;
 import com.evolt.chatapp.repositories.ConversationRepository;
 import com.evolt.chatapp.repositories.UserRepository;
+import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -53,5 +54,10 @@ public class UserService {
         ConversationMember conversationMember = new ConversationMember(conversation , user, ConversationRole.MEMBER);
         conversationMemberRepository.save(conversationMember);
         return user;
+    }
+
+    @Transactional
+    public void setConnected(String username, boolean b) {
+        userRepository.setConnected(b, username);
     }
 }
