@@ -32,7 +32,6 @@ public class Conversation {
     )
     private List<ConversationMember> members;
 
-
     private String name;
 
     private String imageUrl;

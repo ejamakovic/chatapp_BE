@@ -1,6 +1,7 @@
 package com.evolt.chatapp.controllers;
 
 import com.evolt.chatapp.models.Conversation;
+import com.evolt.chatapp.models.dto.ConversationListDto;
 import com.evolt.chatapp.services.ConversationMemberService;
 import com.evolt.chatapp.services.ConversationService;
 import org.springframework.data.domain.Page;
@@ -12,11 +13,9 @@ import org.springframework.web.bind.annotation.*;
 public class ConversationController {
 
     private final ConversationService conversationService;
-    private final ConversationMemberService conversationMemberService;
 
-    public ConversationController(ConversationService conversationService, ConversationMemberService conversationMemberService) {
+    public ConversationController(ConversationService conversationService) {
         this.conversationService = conversationService;
-        this.conversationMemberService = conversationMemberService;
     }
 
     @GetMapping("/{id}")
@@ -35,12 +34,19 @@ public class ConversationController {
     }
 
     @GetMapping("/user/{id}")
-    public ResponseEntity<Page<Conversation>> getUsersConversation(
+    public ResponseEntity<Page<ConversationListDto>> getUsersConversation(
             @PathVariable Long id,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
             ) {
-        return ResponseEntity.ok(conversationMemberService.getUserConversations(id, page, size));
+        return ResponseEntity.ok(conversationService.getUserConversations(id, page, size));
     }
 
+    @GetMapping("/private")
+    public ResponseEntity<Conversation> getOrCreatePrivateConversation(
+            @RequestParam Long senderId,
+            @RequestParam Long receiverId
+    ) {
+        return ResponseEntity.ok(conversationService.findOrCreatePrivateConversation(senderId, receiverId));
+    }
 }
