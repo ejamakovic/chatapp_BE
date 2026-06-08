@@ -1,9 +1,11 @@
 package com.evolt.chatapp.websocket;
 
 import com.evolt.chatapp.models.ConversationMember;
+import com.evolt.chatapp.models.Notification;
 import com.evolt.chatapp.models.dto.MessageDTO;
 import com.evolt.chatapp.models.dto.UserDTO;
 import com.evolt.chatapp.services.ConversationMemberService;
+import com.evolt.chatapp.services.NotificationService;
 import com.evolt.chatapp.services.UserService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
@@ -32,15 +34,17 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
             LoggerFactory.getLogger(ChatWebSocketHandler.class);
     
     private final ConversationMemberService conversationMemberService;
+    private final NotificationService notificationService;
 
     private void sendToUser(String username, Object payload) {
         sendRaw(username, payload);
     }
 
-    public ChatWebSocketHandler(ObjectMapper objectMapper, ConversationMemberService conversationMemberService, UserService userService) {
+    public ChatWebSocketHandler(ObjectMapper objectMapper, ConversationMemberService conversationMemberService, UserService userService, NotificationService notificationService) {
         this.objectMapper = objectMapper;
         this.conversationMemberService = conversationMemberService;
         this.userService = userService;
+        this.notificationService = notificationService;
     }
 
     // SEND RAW
@@ -63,6 +67,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
     public void afterConnectionEstablished(WebSocketSession session) {
 
         String username = (String) session.getAttributes().get("username");
+        Long id = (Long) session.getAttributes().get("id");
 
         if (username == null) return;
 
@@ -70,6 +75,8 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
 
         userService.setConnected(username, true);
         logger.info("User connected: {}", username);
+
+        List<Notification> notifications = notificationService.findAllFromUser(id);
 
         notifyUserOnline(new UserDTO(username));
     }
@@ -90,8 +97,6 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
 
         userService.setConnected(username, false);
         logger.info("User disconnected: {}", username);
-
-        notifyUserOffline(new UserDTO(username));
     }
 
     // BROADCAST ALL USERS
@@ -104,10 +109,6 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         sendToAll(new SocketPayloads.UserPayload(userDTO));
     }
 
-    // USER OFFLINE EVENT
-    public void notifyUserOffline(UserDTO userDTO) {
-        sendToAll(new SocketPayloads.UserPayload("user_leave", userDTO));
-    }
 
     // NEW MESSAGE
     public void notifyNewMessage(MessageDTO messageDTO) {

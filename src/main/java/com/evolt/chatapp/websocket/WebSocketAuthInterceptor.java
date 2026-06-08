@@ -35,10 +35,12 @@ public class WebSocketAuthInterceptor implements HandshakeInterceptor {
             String token = query.split("token=")[1];
 
             String username = jwtService.extractUsername(token);
+            Long id = Long.valueOf(jwtService.extractUserId(token));
 
             if (username == null) return false;
 
             attributes.put("username", username);
+            attributes.put("id", id);
 
             return true;
 
