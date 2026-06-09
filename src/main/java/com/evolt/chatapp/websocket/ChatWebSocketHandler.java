@@ -1,9 +1,8 @@
 package com.evolt.chatapp.websocket;
 
-import com.evolt.chatapp.models.ConversationMember;
 import com.evolt.chatapp.models.Notification;
-import com.evolt.chatapp.models.dto.MessageDTO;
-import com.evolt.chatapp.models.dto.UserDTO;
+import com.evolt.chatapp.models.dto.MessageDto;
+import com.evolt.chatapp.models.dto.UserDto;
 import com.evolt.chatapp.services.ConversationMemberService;
 import com.evolt.chatapp.services.NotificationService;
 import com.evolt.chatapp.services.UserService;
@@ -36,10 +35,6 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
     private final ConversationMemberService conversationMemberService;
     private final NotificationService notificationService;
 
-    private void sendToUser(String username, Object payload) {
-        sendRaw(username, payload);
-    }
-
     public ChatWebSocketHandler(ObjectMapper objectMapper, ConversationMemberService conversationMemberService, UserService userService, NotificationService notificationService) {
         this.objectMapper = objectMapper;
         this.conversationMemberService = conversationMemberService;
@@ -47,8 +42,8 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         this.notificationService = notificationService;
     }
 
-    // SEND RAW
-    private void sendRaw(String username, Object payload) {
+    // SEND TO USER
+    private void sendToUser(String username, Object payload) {
         WebSocketSession session = userSessions.get(username);
 
         if (session == null || !session.isOpen()) return;
@@ -69,16 +64,30 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         String username = (String) session.getAttributes().get("username");
         Long id = (Long) session.getAttributes().get("id");
 
-        if (username == null) return;
+        if (username == null || id == null) {
+            return;
+        }
 
         userSessions.put(username, session);
 
         userService.setConnected(username, true);
         logger.info("User connected: {}", username);
 
-        List<Notification> notifications = notificationService.findAllFromUser(id);
+        List<Notification> notifications =
+                notificationService.findAllPendingFromUser(id);
 
-        notifyUserOnline(new UserDTO(username));
+        notifications.forEach(notification -> {
+            sendToUser(
+                    username,
+                    new SocketPayloads.NotificationPayload(notification)
+            );
+        });
+
+        notificationService.markAllAsDelivered(id);
+
+        notificationService.createUserOnlineNotifications(id, username);
+
+        notifyUserOnline(new UserDto(id, username));
     }
 
     // DISCONNECT
@@ -101,29 +110,20 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
 
     // BROADCAST ALL USERS
     private void sendToAll(Object payload) {
-        userSessions.keySet().forEach(user -> sendRaw(user, payload));
+        userSessions.keySet().forEach(user -> sendToUser(user, payload));
     }
 
     // USER ONLINE EVENT
-    public void notifyUserOnline(UserDTO userDTO) {
+    public void notifyUserOnline(UserDto userDTO) {
         sendToAll(new SocketPayloads.UserPayload(userDTO));
     }
 
-
     // NEW MESSAGE
-    public void notifyNewMessage(MessageDTO messageDTO) {
+    public void notifyNewMessage(MessageDto messageDTO) {
 
         try {
 
-            SocketPayloads.MessagePayload payload =
-                    new SocketPayloads.MessagePayload(
-                            messageDTO.getId(),
-                            messageDTO.getConversationId(),
-                            messageDTO.getSender(),
-                            messageDTO.getContent(),
-                            messageDTO.getTimestamp(),
-                            messageDTO.getAttachments()
-                    );
+            SocketPayloads.MessagePayload payload = new SocketPayloads.MessagePayload(messageDTO);
 
             List<String> participants =
                     conversationMemberService.getParticipants(

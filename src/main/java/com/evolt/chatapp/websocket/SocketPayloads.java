@@ -1,7 +1,9 @@
 package com.evolt.chatapp.websocket;
 
-import com.evolt.chatapp.models.dto.AttachmentDTO;
-import com.evolt.chatapp.models.dto.UserDTO;
+import com.evolt.chatapp.models.Notification;
+import com.evolt.chatapp.models.dto.AttachmentDto;
+import com.evolt.chatapp.models.dto.MessageDto;
+import com.evolt.chatapp.models.dto.UserDto;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -13,19 +15,19 @@ public class SocketPayloads {
     public static class UserPayload {
 
         public String type = "user_join";
-        public UserDTO user;
+        public UserDto user;
 
-        public UserPayload(String type, UserDTO user) {
+        public UserPayload(String type, UserDto user) {
             this.type = type;
             this.user = user;
         }
 
-        public UserPayload(UserDTO user) {
+        public UserPayload(UserDto user) {
             this.user = user;
         }
     }
 
-    // MESSAGE EVENT (NEW MODEL)
+    // MESSAGE EVENT
     public static class MessagePayload {
 
         public String type = "message";
@@ -34,30 +36,25 @@ public class SocketPayloads {
 
         public Long conversationId;
 
-        public UserDTO sender;
+        public UserDto sender;
 
         public String content;
 
         public LocalDateTime timestamp;
 
-        public List<AttachmentDTO> attachments = new ArrayList<>();
+        public List<AttachmentDto> attachments = new ArrayList<>();
 
         public MessagePayload() {}
 
         public MessagePayload(
-                Long id,
-                Long conversationId,
-                UserDTO sender,
-                String content,
-                LocalDateTime timestamp,
-                List<AttachmentDTO> attachments
+                MessageDto messageDTO
         ) {
-            this.id = id;
-            this.conversationId = conversationId;
-            this.sender = sender;
-            this.content = content;
-            this.timestamp = timestamp;
-            this.attachments = attachments;
+            this.id = messageDTO.getId();
+            this.conversationId = messageDTO.getConversationId();
+            this.sender = messageDTO.getSender();
+            this.content = messageDTO.getContent();
+            this.timestamp = messageDTO.getTimestamp();
+            this.attachments = messageDTO.getAttachments();
         }
     }
 
@@ -66,34 +63,28 @@ public class SocketPayloads {
 
         public String type = "notification";
 
-        public Long conversationId;
+        public Long id;
 
-        public String title;
+        public UserDto recipient;
 
-        public String preview;
+        public Long referenceId;
 
-        public Long messageId;
+        public String notificationType;
 
-        public Long unreadCount;
+        public String status;
 
-        public UserDTO sender;
+        public String content;
 
-        public NotificationPayload() {}
+        public LocalDateTime timestamp;
 
-        public NotificationPayload(
-                Long conversationId,
-                String title,
-                String preview,
-                Long messageId,
-                Long unreadCount,
-                UserDTO sender
-        ) {
-            this.conversationId = conversationId;
-            this.title = title;
-            this.preview = preview;
-            this.messageId = messageId;
-            this.unreadCount = unreadCount;
-            this.sender = sender;
+        public NotificationPayload(Notification notification) {
+            this.id = notification.getId();
+            this.recipient = notification.getRecipient();
+            this.notificationType = String.valueOf(notification.getType());
+            this.status = String.valueOf(notification.getStatus());
+            this.content = String.valueOf(notification.getContent());
+            this.referenceId = notification.getReferenceId();
+            this.timestamp = notification.getTimestamp();
         }
     }
 
@@ -105,11 +96,11 @@ public class SocketPayloads {
 
         public Long conversationId;
 
-        public UserDTO user;
+        public UserDto user;
 
         public boolean typing;
 
-        public TypingPayload(Long conversationId, UserDTO user, boolean typing) {
+        public TypingPayload(Long conversationId, UserDto user, boolean typing) {
             this.conversationId = conversationId;
             this.user = user;
             this.typing = typing;

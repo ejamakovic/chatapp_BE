@@ -6,34 +6,34 @@ import com.evolt.chatapp.models.Message;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-public class MessageDTO {
+public class MessageDto {
 
     private Long id;
 
     private String content;
 
-    private UserDTO sender;
+    private UserDto sender;
 
     private Long conversationId;
 
     private LocalDateTime timestamp;
 
-    private List<AttachmentDTO> attachments;
+    private List<AttachmentDto> attachments;
 
-    public MessageDTO() {
+    public MessageDto() {
     }
 
-    public MessageDTO(Message message) {
+    public MessageDto(Message message) {
         this.id = message.getId();
         this.content = message.getContent();
 
         this.sender = message.getSender() != null
-                ? new UserDTO(message.getSender())
+                ? new UserDto(message.getSender())
                 : null;
         this.timestamp = message.getTimestamp();
-        List<AttachmentDTO> list = new ArrayList<>();
+        List<AttachmentDto> list = new ArrayList<>();
         for (Attachment attachment : message.getAttachments()) {
-            AttachmentDTO attachmentDTO = new AttachmentDTO(attachment);
+            AttachmentDto attachmentDTO = new AttachmentDto(attachment);
             list.add(attachmentDTO);
         }
         this.attachments = list;
@@ -56,11 +56,11 @@ public class MessageDTO {
         this.content = content;
     }
 
-    public UserDTO getSender() {
+    public UserDto getSender() {
         return sender;
     }
 
-    public void setSender(UserDTO sender) {
+    public void setSender(UserDto sender) {
         this.sender = sender;
     }
 
@@ -80,11 +80,11 @@ public class MessageDTO {
         this.timestamp = timestamp;
     }
 
-    public List<AttachmentDTO> getAttachments() {
+    public List<AttachmentDto> getAttachments() {
         return attachments;
     }
 
-    public void setAttachments(List<AttachmentDTO> attachments) {
+    public void setAttachments(List<AttachmentDto> attachments) {
         this.attachments = attachments;
     }
 }

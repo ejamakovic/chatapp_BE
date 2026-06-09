@@ -2,23 +2,20 @@ package com.evolt.chatapp.models.dto;
 
 import com.evolt.chatapp.models.User;
 
-public class UserDTO {
+public class UserDto {
     private Long id;
     private String username;
 
-    public UserDTO(User user) {
+    public UserDto(User user) {
         this.id = user.getId();
         this.username = user.getUsername();
     }
 
-    public UserDTO() {
+    public UserDto() {
     }
 
-    public UserDTO(Long id) {
+    public UserDto(Long id, String username) {
         this.id = id;
-    }
-
-    public UserDTO(String username) {
         this.username = username;
     }
 

@@ -1,7 +1,7 @@
 package com.evolt.chatapp.services;
 
 import com.evolt.chatapp.models.*;
-import com.evolt.chatapp.models.dto.MessageDTO;
+import com.evolt.chatapp.models.dto.MessageDto;
 import com.evolt.chatapp.repositories.MessageRepository;
 import com.evolt.chatapp.websocket.ChatWebSocketHandler;
 import org.springframework.data.domain.Page;
@@ -45,7 +45,7 @@ public class MessageService {
         return messageRepository.save(message);
     }
 
-    public MessageDTO saveMessageDTO(
+    public MessageDto saveMessageDTO(
             Long senderId,
             Long conversationId,
             String content,
@@ -91,7 +91,7 @@ public class MessageService {
             }
         }
 
-        MessageDTO messageDTO = new MessageDTO(savedMessage);
+        MessageDto messageDTO = new MessageDto(savedMessage);
         chatWebSocketHandler.notifyNewMessage(messageDTO);
         return messageDTO;
     }

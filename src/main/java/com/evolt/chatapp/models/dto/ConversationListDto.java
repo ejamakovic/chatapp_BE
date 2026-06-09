@@ -4,14 +4,24 @@ import java.time.LocalDateTime;
 
 public class ConversationListDto {
     private Long id;
-    private String content;
+    private String lastMessage;
     private Long senderId;
     private String senderUsername;
     private LocalDateTime timestamp;
+    private Long unreadCount = 0L;
 
-    public ConversationListDto(Long id, String content, Long senderId, String senderUsername, LocalDateTime timestamp) {
+    public ConversationListDto() {
+    }
+
+    public ConversationListDto(
+            Long id,
+            String lastMessage,
+            Long senderId,
+            String senderUsername,
+            LocalDateTime timestamp
+    ) {
         this.id = id;
-        this.content = content;
+        this.lastMessage = lastMessage;
         this.senderId = senderId;
         this.senderUsername = senderUsername;
         this.timestamp = timestamp;
@@ -25,12 +35,12 @@ public class ConversationListDto {
         this.id = id;
     }
 
-    public String getContent() {
-        return content;
+    public String getLastMessage() {
+        return lastMessage;
     }
 
-    public void setContent(String content) {
-        this.content = content;
+    public void setLastMessage(String lastMessage) {
+        this.lastMessage = lastMessage;
     }
 
     public Long getSenderId() {
@@ -55,5 +65,13 @@ public class ConversationListDto {
 
     public void setTimestamp(LocalDateTime timestamp) {
         this.timestamp = timestamp;
+    }
+
+    public Long getUnreadCount() {
+        return unreadCount;
+    }
+
+    public void setUnreadCount(Long unreadCount) {
+        this.unreadCount = unreadCount;
     }
 }

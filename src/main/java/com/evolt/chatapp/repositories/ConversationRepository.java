@@ -6,8 +6,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -29,12 +31,18 @@ public interface ConversationRepository extends JpaRepository<Conversation, Long
     )
     FROM ConversationMember cm
     JOIN cm.conversation c
-    LEFT JOIN Message m ON m.conversation.id = c.id
-        AND m.id = (SELECT MAX(m2.id) FROM Message m2 WHERE m2.conversation.id = c.id)
+    LEFT JOIN Message m ON m.id = (
+        SELECT MAX(m2.id)
+        FROM Message m2
+        WHERE m2.conversation.id = c.id
+    )
     WHERE cm.user.id = :userId
     ORDER BY COALESCE(m.timestamp, c.createdAt) DESC
 """)
-    Page<ConversationListDto> findUserConversations(Long userId, Pageable pageable);
+    Page<ConversationListDto> findUserConversations(
+            @Param("userId") Long userId,
+            Pageable pageable
+    );
 
     @Query("""
     SELECT cm1.conversation
@@ -48,5 +56,5 @@ public interface ConversationRepository extends JpaRepository<Conversation, Long
           WHERE sub_cm.conversation.id = cm1.conversation.id
       ) = 2
 """)
-    Optional<Conversation> findPrivateConversation(Long senderId, Long receiverId);
+    Optional<Conversation> findPrivateConversation(@Param("senderId") Long senderId, @Param("receiverId") Long receiverId);
 }

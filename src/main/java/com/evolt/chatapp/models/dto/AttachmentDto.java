@@ -2,18 +2,18 @@ package com.evolt.chatapp.models.dto;
 
 import com.evolt.chatapp.models.Attachment;
 
-public class AttachmentDTO {
+public class AttachmentDto {
     private Long id;
     private String fileUrl;
     private String fileType;
 
-    public AttachmentDTO(Long id, String fileUrl, String fileType) {
+    public AttachmentDto(Long id, String fileUrl, String fileType) {
         this.id = id;
         this.fileUrl = fileUrl;
         this.fileType = fileType;
     }
 
-    public AttachmentDTO(Attachment attachment) {
+    public AttachmentDto(Attachment attachment) {
         this.id = attachment.getId();
         this.fileUrl = attachment.getFileUrl();
         this.fileType = attachment.getFileType();

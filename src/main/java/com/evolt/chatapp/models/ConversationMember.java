@@ -8,16 +8,14 @@ import java.time.LocalDateTime;
 @Entity
 @Table(
         name = "conversation_members",
-
         uniqueConstraints = {
-                @UniqueConstraint(
-                        columnNames = {"conversation_id", "user_id"}
-                )
+                @UniqueConstraint(columnNames = {"conversation_id", "user_id"})
         },
         indexes = {
-
+                @Index(name = "idx_cm_user", columnList = "user_id"),
+                @Index(name = "idx_cm_conversation", columnList = "conversation_id")
         }
-    )
+)
 public class ConversationMember {
 
     @Id
@@ -35,13 +33,7 @@ public class ConversationMember {
     @Enumerated(EnumType.STRING)
     private ConversationRole role = ConversationRole.MEMBER;
 
-    private Long lastSeenMessageId;
-
-    //private boolean muted = false;
-
-    //private boolean archived = false;
-
-    //private boolean pinned = false;
+    private Long lastSeenMessageId = 0L;
 
     @Column(nullable = false, updatable = false)
     private LocalDateTime joinedAt = LocalDateTime.now();

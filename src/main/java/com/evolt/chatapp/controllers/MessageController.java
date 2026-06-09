@@ -1,7 +1,7 @@
 package com.evolt.chatapp.controllers;
 
 import com.evolt.chatapp.models.Message;
-import com.evolt.chatapp.models.dto.MessageDTO;
+import com.evolt.chatapp.models.dto.MessageDto;
 import com.evolt.chatapp.models.mappers.MessageMapper;
 import com.evolt.chatapp.services.MessageService;
 import org.slf4j.Logger;
@@ -58,13 +58,13 @@ public class MessageController {
     }
 
     @PostMapping("/send")
-    public ResponseEntity<MessageDTO> sendMessage(
+    public ResponseEntity<MessageDto> sendMessage(
             @RequestParam Long senderId,
             @RequestParam Long conversationId,
             @RequestParam String content,
             @RequestParam(required = false) List<MultipartFile> files
     ) {
-        MessageDTO dto = messageService.saveMessageDTO(
+        MessageDto dto = messageService.saveMessageDTO(
                 senderId,
                 conversationId,
                 content,

@@ -20,7 +20,11 @@ import java.util.List;
                         columnList = "timestamp"),
 
                 @Index(name = "idx_conversation_timestamp",
-                        columnList = "conversation_id,timestamp")
+                        columnList = "conversation_id,timestamp"),
+                @Index(
+                        name = "idx_conversation_id",
+                        columnList = "conversation_id,id"
+                )
         }
 )
 public class Message {

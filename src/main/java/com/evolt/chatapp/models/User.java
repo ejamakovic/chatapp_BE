@@ -1,12 +1,12 @@
 package com.evolt.chatapp.models;
 
-import com.evolt.chatapp.models.dto.UserDTO;
+import com.evolt.chatapp.models.dto.UserDto;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "users")
-public class User extends UserDTO {
+public class User extends UserDto {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
