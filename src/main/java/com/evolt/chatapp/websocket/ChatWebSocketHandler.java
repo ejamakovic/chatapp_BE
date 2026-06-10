@@ -85,7 +85,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
 
         notificationService.markAllAsDelivered(id);
 
-        notificationService.createUserOnlineNotifications(id, username);
+        notificationService.createNewUserNotifications(id, username);
 
         notifyUserOnline(new UserDto(id, username));
     }

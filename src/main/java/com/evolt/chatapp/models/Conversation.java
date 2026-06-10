@@ -24,7 +24,6 @@ public class Conversation {
     @Column(nullable = false)
     private ConversationType type;
 
-    @JsonIgnore
     @OneToMany(
             mappedBy = "conversation",
             cascade = CascadeType.ALL,

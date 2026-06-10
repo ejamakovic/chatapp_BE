@@ -46,7 +46,7 @@ public class NotificationService {
     }
 
     @Transactional
-    public void createUserOnlineNotifications(Long userId, String username) {
+    public void createNewUserNotifications(Long userId, String username) {
 
         List<User> users = userRepository.findAll();
 

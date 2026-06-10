@@ -65,21 +65,31 @@ public class ConversationService {
             return conversation.get();
         }
 
-        Conversation newConv = new Conversation();
-        newConv.setType(ConversationType.PRIVATE);
-        newConv = conversationRepository.save(newConv);
+        Conversation newConversation = new Conversation();
+        newConversation.setType(ConversationType.PRIVATE);
+        newConversation = conversationRepository.save(newConversation);
 
-        User sender = userRepository.findById(senderId)
-                .orElseThrow(() -> new IllegalArgumentException("User not found with id: " + senderId));
-        User receiver = userRepository.findById(receiverId)
-                .orElseThrow(() -> new IllegalArgumentException("User not found with id: " + receiverId));
+        User sender = userRepository.getReferenceById(senderId);
+        User receiver = userRepository.getReferenceById(receiverId);
 
-        ConversationMember conversationMember1 = new ConversationMember(newConv, sender, ConversationRole.ADMIN);
-        ConversationMember conversationMember2 = new ConversationMember(newConv, receiver, ConversationRole.ADMIN);
+        ConversationMember conversationMember1 = new ConversationMember(newConversation, sender, ConversationRole.ADMIN);
+        ConversationMember conversationMember2 = new ConversationMember(newConversation, receiver, ConversationRole.ADMIN);
 
         conversationMemberRepository.save(conversationMember1);
         conversationMemberRepository.save(conversationMember2);
 
-        return newConv;
+        return newConversation;
+    }
+
+    @Transactional
+    public Conversation addUserToConversation(Long conversationId, Long userId) {
+        Optional<Conversation> conversation = conversationRepository.findById(conversationId);
+        if (conversation.isPresent()) {
+            User user = userRepository.getReferenceById(userId);
+            ConversationMember conversationMember = new ConversationMember(conversation.get(), user, ConversationRole.MEMBER);
+            conversationMemberRepository.save(conversationMember);
+            return conversation.get();
+        }
+        return null;
     }
 }

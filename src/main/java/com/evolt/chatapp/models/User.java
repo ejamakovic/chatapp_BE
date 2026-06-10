@@ -5,7 +5,12 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "users")
+@Table(name = "users",
+        indexes = {
+                @Index(name = "index_user_id", columnList = "id"),
+                @Index(name = "index_user_username", columnList = "username")
+        }
+)
 public class User extends UserDto {
 
     @Id

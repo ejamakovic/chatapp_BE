@@ -6,6 +6,7 @@ import com.evolt.chatapp.models.User;
 import com.evolt.chatapp.models.enums.ConversationRole;
 import com.evolt.chatapp.repositories.ConversationMemberRepository;
 import com.evolt.chatapp.repositories.ConversationRepository;
+import com.evolt.chatapp.repositories.NotificationRepository;
 import com.evolt.chatapp.repositories.UserRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
@@ -17,12 +18,13 @@ public class UserService {
     private final UserRepository userRepository;
     private final ConversationRepository conversationRepository;
     private final ConversationMemberRepository conversationMemberRepository;
+    private final NotificationService notificationService;
 
-
-    public UserService(UserRepository userRepository, ConversationRepository conversationRepository, ConversationMemberRepository conversationMemberRepository) {
+    public UserService(UserRepository userRepository, ConversationRepository conversationRepository, ConversationMemberRepository conversationMemberRepository, NotificationRepository notificationRepository, NotificationService notificationService) {
         this.userRepository = userRepository;
         this.conversationRepository = conversationRepository;
         this.conversationMemberRepository = conversationMemberRepository;
+        this.notificationService = notificationService;
     }
     public List<User> getAllUsers() {
         return userRepository.findAll();
@@ -53,6 +55,7 @@ public class UserService {
         Conversation conversation = conversationRepository.findGlobalConversation();
         ConversationMember conversationMember = new ConversationMember(conversation , user, ConversationRole.MEMBER);
         conversationMemberRepository.save(conversationMember);
+        notificationService.createNewUserNotifications(user.getId(), user.getUsername());
         return user;
     }
 
