@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class NotificationService {
@@ -67,6 +68,18 @@ public class NotificationService {
 
             notificationRepository.save(notification);
 
+        }
+    }
+
+    @Transactional
+    public void setStatus(Long id, String status) {
+        Optional<Notification> notification = notificationRepository.findById(id);
+        if (notification.isPresent()) {
+            notification.get().setStatus(NotificationStatus.valueOf(status));
+            notificationRepository.save(notification.get());
+        }
+        else {
+            // BI
         }
     }
 

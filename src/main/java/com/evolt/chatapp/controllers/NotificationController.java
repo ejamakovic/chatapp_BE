@@ -2,16 +2,12 @@ package com.evolt.chatapp.controllers;
 
 import com.evolt.chatapp.models.Notification;
 import com.evolt.chatapp.models.dto.NotificationDto;
+import com.evolt.chatapp.models.enums.NotificationStatus;
 import com.evolt.chatapp.models.mappers.NotificationMapper;
 import com.evolt.chatapp.services.NotificationService;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
+import org.springframework.web.bind.annotation.*;
 import java.util.List;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/notifications")
@@ -43,5 +39,22 @@ public class NotificationController {
                         .toList();
 
         return ResponseEntity.ok(notifications);
+    }
+
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<NotificationDto> updateStatus(
+            @PathVariable Long id,
+            @RequestBody String status) {
+
+        Notification notification = notificationService.findById(id);
+
+        if (notification == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        notification.setStatus(NotificationStatus.valueOf(status));
+        notificationService.save(notification);
+
+        return ResponseEntity.ok(NotificationMapper.toDTO(notification));
     }
 }

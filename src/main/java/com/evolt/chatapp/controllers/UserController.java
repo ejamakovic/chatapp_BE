@@ -28,7 +28,7 @@ public class UserController {
         return userService.getAllUsersByConnected();
     }
 
-    @PostMapping("/create")
+    @PostMapping()
     public ResponseEntity<User> createUser(@RequestBody UserDto userDTO) {
         return ResponseEntity.ok(userService.createIfNotExists(userDTO.getUsername()));
     }

@@ -6,6 +6,7 @@ import com.evolt.chatapp.models.mappers.MessageMapper;
 import com.evolt.chatapp.services.MessageService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -41,7 +42,7 @@ public class MessageController {
         }
         catch (Exception e){
             logger.error("Error deleting message with id {}", id , e);
-            ResponseEntity.notFound().build();
+            return ResponseEntity.notFound().build();
         }
         return ResponseEntity.ok().build();
     }
@@ -57,7 +58,7 @@ public class MessageController {
         return ResponseEntity.ok(dtoPage);
     }
 
-    @PostMapping("/send")
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<MessageDto> sendMessage(
             @RequestParam Long senderId,
             @RequestParam Long conversationId,
