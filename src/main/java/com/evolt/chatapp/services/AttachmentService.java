@@ -3,6 +3,7 @@ package com.evolt.chatapp.services;
 import com.evolt.chatapp.models.Attachment;
 import com.evolt.chatapp.models.Message;
 import com.evolt.chatapp.repositories.AttachmentRepository;
+import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -22,6 +23,7 @@ public class AttachmentService {
         this.attachmentRepository = attachmentRepository;
     }
 
+    @Transactional
     public Attachment saveAttachment(
             MultipartFile file,
             Message message

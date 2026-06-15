@@ -35,6 +35,7 @@ public class UserService {
         return userRepository.findAllByConnected(true);
     }
 
+    @Transactional
     public User saveUser(User user) {
         return userRepository.save(user);
     }
@@ -47,6 +48,7 @@ public class UserService {
         return userRepository.findByUsername(username);
     }
 
+    @Transactional
     public User createIfNotExists(String username) {
         User user = userRepository.findByUsername(username);
         if (user != null) {

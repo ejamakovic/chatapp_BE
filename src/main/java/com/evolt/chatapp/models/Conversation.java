@@ -32,6 +32,7 @@ public class Conversation {
     )
     private List<ConversationMember> members;
 
+    @JsonIgnore
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "last_message_id")
     private Message lastMessage;

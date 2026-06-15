@@ -72,8 +72,8 @@ public class NotificationService {
     }
 
     @Transactional
-    public Notification save(Notification notification) {
-        return notificationRepository.save(notification);
+    public void save(Notification notification) {
+        notificationRepository.save(notification);
     }
 
     @Transactional

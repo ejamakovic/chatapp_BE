@@ -6,6 +6,7 @@ import com.evolt.chatapp.models.dto.MessageDto;
 import com.evolt.chatapp.repositories.ConversationRepository;
 import com.evolt.chatapp.repositories.MessageRepository;
 import com.evolt.chatapp.websocket.ChatWebSocketHandler;
+import jakarta.transaction.Transactional;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -43,10 +44,12 @@ public class MessageService {
         return messageRepository.findAll();
     }
 
+    @Transactional
     public Message saveMessage(Message message) {
         return messageRepository.save(message);
     }
 
+    @Transactional
     public MessageDto saveMessageDTO(
             Long senderId,
             Long conversationId,
@@ -107,6 +110,7 @@ public class MessageService {
         return messageRepository.findById(id);
     }
 
+    @Transactional
     public void deleteById(Long id) {
         messageRepository.deleteById(id);
     }

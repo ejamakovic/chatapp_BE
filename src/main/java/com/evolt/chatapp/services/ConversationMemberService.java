@@ -2,6 +2,7 @@ package com.evolt.chatapp.services;
 
 import com.evolt.chatapp.models.ConversationMember;
 import com.evolt.chatapp.repositories.ConversationMemberRepository;
+import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -15,6 +16,7 @@ public class ConversationMemberService {
         this.conversationMemberRepository = conversationMemberRepository;
     }
 
+    @Transactional
     public ConversationMember saveConversationMember(ConversationMember conversationMember) {
         return conversationMemberRepository.save(conversationMember);
     }
