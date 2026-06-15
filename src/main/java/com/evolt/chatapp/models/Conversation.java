@@ -32,6 +32,10 @@ public class Conversation {
     )
     private List<ConversationMember> members;
 
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "last_message_id")
+    private Message lastMessage;
+
     private String name;
 
     private String imageUrl;
@@ -43,10 +47,14 @@ public class Conversation {
 
     }
 
-    public Conversation(Long id, ConversationType type) {
+    public Conversation(Long id, ConversationType type, String name, String imageUrl) {
         this.id = id;
         this.type = type;
+        this.name = name;
+        this.imageUrl = imageUrl;
     }
+
+
 
     public Conversation(Long id, ConversationType type, List<ConversationMember> members, String name, String imageUrl, LocalDateTime createdAt) {
         this.id = id;
@@ -111,4 +119,13 @@ public class Conversation {
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
     }
+
+    public Message getLastMessage() {
+        return lastMessage;
+    }
+
+    public void setLastMessage(Message lastMessage) {
+        this.lastMessage = lastMessage;
+    }
+
 }

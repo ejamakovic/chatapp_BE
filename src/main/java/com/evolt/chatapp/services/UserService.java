@@ -3,6 +3,7 @@ package com.evolt.chatapp.services;
 import com.evolt.chatapp.models.Conversation;
 import com.evolt.chatapp.models.ConversationMember;
 import com.evolt.chatapp.models.User;
+import com.evolt.chatapp.models.dto.UserDto;
 import com.evolt.chatapp.models.enums.ConversationRole;
 import com.evolt.chatapp.repositories.ConversationMemberRepository;
 import com.evolt.chatapp.repositories.ConversationRepository;
@@ -55,7 +56,7 @@ public class UserService {
         Conversation conversation = conversationRepository.findGlobalConversation();
         ConversationMember conversationMember = new ConversationMember(conversation , user, ConversationRole.MEMBER);
         conversationMemberRepository.save(conversationMember);
-        notificationService.createNewUserNotifications(user.getId(), user.getUsername());
+        notificationService.createNewUserNotifications(new UserDto(user));
         return user;
     }
 

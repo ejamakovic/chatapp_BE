@@ -21,6 +21,7 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
 
     @Query("""
     SELECT n FROM Notification n
+    JOIN FETCH n.recipient
     WHERE n.recipient.id = :userId
       AND n.status = com.evolt.chatapp.models.enums.NotificationStatus.PENDING
     ORDER BY n.timestamp ASC

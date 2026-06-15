@@ -1,9 +1,12 @@
 package com.evolt.chatapp.services;
 
+import com.evolt.chatapp.events.WebSocketEvent;
 import com.evolt.chatapp.models.*;
 import com.evolt.chatapp.models.dto.MessageDto;
+import com.evolt.chatapp.repositories.ConversationRepository;
 import com.evolt.chatapp.repositories.MessageRepository;
 import com.evolt.chatapp.websocket.ChatWebSocketHandler;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -20,21 +23,20 @@ public class MessageService {
     private final MessageRepository messageRepository;
     private final UserService userService;
     private final AttachmentService attachmentService;
-    private final ConversationService conversationService;
-    private final ChatWebSocketHandler chatWebSocketHandler;
+    private final ApplicationEventPublisher eventPublisher;
+    private final ConversationRepository conversationRepository;
 
     public MessageService(
             MessageRepository messageRepository,
             UserService userService,
             AttachmentService attachmentService,
-            ConversationService conversationService,
-            ChatWebSocketHandler chatWebSocketHandler
-    ) {
+            ApplicationEventPublisher eventPublisher,
+            ConversationRepository conversationRepository) {
         this.messageRepository = messageRepository;
         this.userService = userService;
         this.attachmentService = attachmentService;
-        this.conversationService = conversationService;
-        this.chatWebSocketHandler = chatWebSocketHandler;
+        this.eventPublisher = eventPublisher;
+        this.conversationRepository = conversationRepository;
     }
 
     public List<Message> getAllMessages() {
@@ -55,16 +57,18 @@ public class MessageService {
 
         User sender = userService.findById(senderId);
 
-        Conversation conversation =
-                conversationService.findConversationById(conversationId);
+        Optional<Conversation> conversation =
+                conversationRepository.findById(conversationId);
 
         Message message = new Message(
                 sender,
-                conversation,
+                conversation.orElse(null),
                 content
         );
 
         Message savedMessage = messageRepository.save(message);
+
+        conversationRepository.updateLastMessage(conversation.get().getId(), message);
 
         // Save all files (images/videos)
         if (files != null && !files.isEmpty()) {
@@ -92,7 +96,9 @@ public class MessageService {
         }
 
         MessageDto messageDTO = new MessageDto(savedMessage);
-        chatWebSocketHandler.notifyNewMessage(messageDTO);
+
+        // --- PUBLISH EVENT INSTEAD OF DIRECT CALL ---
+        eventPublisher.publishEvent(new WebSocketEvent<>("NEW_MESSAGE", messageDTO));
         return messageDTO;
     }
 

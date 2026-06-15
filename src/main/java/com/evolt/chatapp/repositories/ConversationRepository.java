@@ -1,15 +1,16 @@
 package com.evolt.chatapp.repositories;
 
 import com.evolt.chatapp.models.Conversation;
+import com.evolt.chatapp.models.Message;
 import com.evolt.chatapp.models.dto.ConversationListDto;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -25,17 +26,18 @@ public interface ConversationRepository extends JpaRepository<Conversation, Long
     SELECT new com.evolt.chatapp.models.dto.ConversationListDto(
         c.id,
         m.content,
-        m.sender.id,
-        m.sender.username,
-        m.timestamp
+        s.id,
+        s.username,
+        m.timestamp,
+        (SELECT COUNT(msg) FROM Message msg 
+         WHERE msg.conversation = c 
+           AND msg.id > cm.lastSeenMessageId 
+           AND msg.sender.id <> :userId)
     )
     FROM ConversationMember cm
     JOIN cm.conversation c
-    LEFT JOIN Message m ON m.id = (
-        SELECT MAX(m2.id)
-        FROM Message m2
-        WHERE m2.conversation.id = c.id
-    )
+    LEFT JOIN c.lastMessage m
+    LEFT JOIN m.sender s
     WHERE cm.user.id = :userId
     ORDER BY COALESCE(m.timestamp, c.createdAt) DESC
 """)
@@ -57,4 +59,17 @@ public interface ConversationRepository extends JpaRepository<Conversation, Long
       ) = 2
 """)
     Optional<Conversation> findPrivateConversation(@Param("senderId") Long senderId, @Param("receiverId") Long receiverId);
+
+    @Modifying
+    @Query("""
+UPDATE Conversation c
+SET c.lastMessage = :message
+WHERE c.id = :conversationId
+""")
+    void updateLastMessage(
+            @Param("conversationId") Long conversationId,
+            @Param("message") Message message
+    );
+
+
 }
