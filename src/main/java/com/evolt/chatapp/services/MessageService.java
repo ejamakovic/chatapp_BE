@@ -100,7 +100,7 @@ public class MessageService {
         MessageDto messageDTO = new MessageDto(savedMessage);
 
         // --- PUBLISH EVENT INSTEAD OF DIRECT CALL ---
-        eventPublisher.publishEvent(new WebSocketEvent<>("NEW_MESSAGE", savedMessage));
+        eventPublisher.publishEvent(new WebSocketEvent<>("NEW_MESSAGE", messageDTO));
         return messageDTO;
     }
 

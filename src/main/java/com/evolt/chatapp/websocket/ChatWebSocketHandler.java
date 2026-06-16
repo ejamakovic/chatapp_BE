@@ -57,7 +57,6 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
 
                 List<String> participants = conversationMemberService.getParticipants(messageDto.getConversationId());
                 for (String username : participants) {
-                    sendToUser(username, payload);
                     boolean delivered = sendToUser(username, payload);
                 }
             }

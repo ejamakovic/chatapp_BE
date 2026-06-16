@@ -38,6 +38,7 @@ public class MessageDto {
             AttachmentDto attachmentDTO = new AttachmentDto(attachment);
             list.add(attachmentDTO);
         }
+        this.status = message.getStatus().toString();
         this.attachments = list;
         this.conversationId = message.getConversation().getId();
     }
