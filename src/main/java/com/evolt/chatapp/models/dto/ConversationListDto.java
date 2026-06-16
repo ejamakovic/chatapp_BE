@@ -4,11 +4,9 @@ import java.time.LocalDateTime;
 
 public class ConversationListDto {
     private Long id;
-
     private String name;
     private String imageUrl;
     private String lastMessage;
-    private Long senderId;
     private String senderUsername;
     private LocalDateTime timestamp;
     private Long unreadCount;
@@ -19,14 +17,12 @@ public class ConversationListDto {
     public ConversationListDto(
             Long id,
             String lastMessage,
-            Long senderId,
             String senderUsername,
             LocalDateTime timestamp,
             Long unreadCount
     ) {
         this.id = id;
         this.lastMessage = lastMessage;
-        this.senderId = senderId;
         this.senderUsername = senderUsername;
         this.unreadCount = unreadCount;
         this.timestamp = timestamp;

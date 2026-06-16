@@ -17,19 +17,29 @@ public class ConversationMemberService {
     }
 
     @Transactional
-    public ConversationMember saveConversationMember(ConversationMember conversationMember) {
+    public ConversationMember save(ConversationMember conversationMember) {
         return conversationMemberRepository.save(conversationMember);
     }
 
-    public ConversationMember getConversationMemberById(Long id) {
+    public ConversationMember getById(Long id) {
         return conversationMemberRepository.findById(id).orElse(null);
     }
 
-    public List<ConversationMember> getAllConversationMembers() {
+    public List<ConversationMember> getAll() {
         return conversationMemberRepository.findAll();
     }
 
     public List<String> getParticipants(Long conversationId) {
         return conversationMemberRepository.findConversationMembersByConversationId(conversationId);
+    }
+
+    @Transactional
+    public void deleteById(Long id) {
+        conversationMemberRepository.deleteById(id);
+    }
+
+    @Transactional
+    public void updateLastSeenMessage(Long userId, Long conversationId, Long lastSeenMessageId) {
+        conversationMemberRepository.updateLastSeenMessage(userId, conversationId, lastSeenMessageId);
     }
 }
