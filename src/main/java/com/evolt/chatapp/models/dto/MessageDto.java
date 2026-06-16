@@ -12,6 +12,8 @@ public class MessageDto {
 
     private String content;
 
+    private String status;
+
     private UserDto sender;
 
     private Long conversationId;
@@ -86,5 +88,13 @@ public class MessageDto {
 
     public void setAttachments(List<AttachmentDto> attachments) {
         this.attachments = attachments;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
     }
 }

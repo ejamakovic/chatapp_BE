@@ -32,7 +32,7 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
     @Query("""
     UPDATE Notification n
     SET n.status = com.evolt.chatapp.models.enums.NotificationStatus.DELIVERED
-    WHERE n.recipient.id = :userId
+    WHERE n.recipient.id = :userId AND n.status = com.evolt.chatapp.models.enums.NotificationStatus.PENDING
 """)
     void markAllAsDelivered(Long userId);
 }

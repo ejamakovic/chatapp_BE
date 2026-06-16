@@ -5,7 +5,6 @@ import com.evolt.chatapp.models.*;
 import com.evolt.chatapp.models.dto.MessageDto;
 import com.evolt.chatapp.repositories.ConversationRepository;
 import com.evolt.chatapp.repositories.MessageRepository;
-import com.evolt.chatapp.websocket.ChatWebSocketHandler;
 import jakarta.transaction.Transactional;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
@@ -45,7 +44,7 @@ public class MessageService {
     }
 
     @Transactional
-    public Message saveMessage(Message message) {
+    public Message save(Message message) {
         return messageRepository.save(message);
     }
 
@@ -101,7 +100,7 @@ public class MessageService {
         MessageDto messageDTO = new MessageDto(savedMessage);
 
         // --- PUBLISH EVENT INSTEAD OF DIRECT CALL ---
-        eventPublisher.publishEvent(new WebSocketEvent<>("NEW_MESSAGE", messageDTO));
+        eventPublisher.publishEvent(new WebSocketEvent<>("NEW_MESSAGE", savedMessage));
         return messageDTO;
     }
 

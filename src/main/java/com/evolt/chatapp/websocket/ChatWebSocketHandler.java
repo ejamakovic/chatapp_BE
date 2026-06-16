@@ -1,9 +1,13 @@
 package com.evolt.chatapp.websocket;
 
 import com.evolt.chatapp.events.WebSocketEvent;
+import com.evolt.chatapp.models.Message;
 import com.evolt.chatapp.models.Notification;
 import com.evolt.chatapp.models.dto.MessageDto;
+import com.evolt.chatapp.models.enums.MessageStatus;
+import com.evolt.chatapp.models.enums.NotificationStatus;
 import com.evolt.chatapp.services.ConversationMemberService;
+import com.evolt.chatapp.services.MessageService;
 import com.evolt.chatapp.services.NotificationService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.transaction.Transactional;
@@ -31,13 +35,15 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
     private final ObjectMapper objectMapper;
     private final ConversationMemberService conversationMemberService;
     private final NotificationService notificationService;
+    private final MessageService messageService;
 
     public ChatWebSocketHandler(ObjectMapper objectMapper,
                                 ConversationMemberService conversationMemberService,
-                                NotificationService notificationService) {
+                                NotificationService notificationService, MessageService messageService) {
         this.objectMapper = objectMapper;
         this.conversationMemberService = conversationMemberService;
         this.notificationService = notificationService;
+        this.messageService = messageService;
     }
 
     // --- CENTRALIZED EVENT ROUTER ---
@@ -52,11 +58,24 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
                 List<String> participants = conversationMemberService.getParticipants(messageDto.getConversationId());
                 for (String username : participants) {
                     sendToUser(username, payload);
+                    boolean delivered = sendToUser(username, payload);
                 }
             }
             case "USER_JOINED" -> {
+                // Need to add payload if I want this
+            }
+            case "NOTIFICATION" -> {
                 Notification notification = (Notification) event.getPayload();
-                sendToAll(new SocketPayloads.NotificationPayload(notification));
+
+                boolean delivered = sendToUser(
+                        notification.getRecipient().getUsername(),
+                        new SocketPayloads.NotificationPayload(notification)
+                );
+
+                if (delivered) {
+                    notification.setStatus(NotificationStatus.DELIVERED);
+                    notificationService.save(notification);
+                }
             }
             default -> logger.warn("Received unhandled WebSocket event type: {}", event.getEventType());
         }
@@ -93,15 +112,20 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
     }
 
     // --- SEND UTILITIES ---
-    private void sendToUser(String username, Object payload) {
+    private boolean sendToUser(String username, Object payload) {
         WebSocketSession session = userSessions.get(username);
-        if (session == null || !session.isOpen()) return;
+
+        if (session == null || !session.isOpen()) {
+            return false;
+        }
 
         try {
-            String jsonSpace = objectMapper.writeValueAsString(payload);
-            session.sendMessage(new TextMessage(jsonSpace));
+            String json = objectMapper.writeValueAsString(payload);
+            session.sendMessage(new TextMessage(json));
+            return true;
         } catch (IOException e) {
             logger.error("Failed to send WS message to {}", username, e);
+            return false;
         }
     }
 

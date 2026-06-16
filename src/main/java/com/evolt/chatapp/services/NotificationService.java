@@ -1,11 +1,11 @@
 package com.evolt.chatapp.services;
 
+import com.evolt.chatapp.events.WebSocketEvent;
 import com.evolt.chatapp.models.Notification;
 import com.evolt.chatapp.models.User;
 import com.evolt.chatapp.models.dto.UserDto;
 import com.evolt.chatapp.models.enums.NotificationStatus;
 import com.evolt.chatapp.models.enums.NotificationType;
-import com.evolt.chatapp.events.NewUserNotificationEvent;
 import com.evolt.chatapp.repositories.NotificationRepository;
 import com.evolt.chatapp.repositories.UserRepository;
 import jakarta.transaction.Transactional;
@@ -55,7 +55,7 @@ public class NotificationService {
 
             notificationRepository.save(notification);
 
-            eventPublisher.publishEvent(new NewUserNotificationEvent(notification));
+            eventPublisher.publishEvent(new WebSocketEvent<>("NOTIFICATION", notification));
         }
     }
 

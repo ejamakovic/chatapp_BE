@@ -48,7 +48,7 @@ public class SocketPayloads {
             this(
                     "notification",
                     notification.getId(),
-                    notification.getRecipient() != null ? new UserDto(notification.getRecipient()) : null, // Ensured conversion to UserDto if needed
+                    notification.getRecipient() != null ? new UserDto(notification.getRecipient()) : null,
                     notification.getReferenceId(),
                     String.valueOf(notification.getType()),
                     String.valueOf(notification.getStatus()),

@@ -42,7 +42,7 @@ public class NotificationController {
     }
 
     @PatchMapping("/{id}/status")
-    public ResponseEntity<NotificationDto> updateStatus(
+    public ResponseEntity<NotificationDto> updateNotificationStatus(
             @PathVariable Long id,
             @RequestBody String status) {
 
@@ -52,9 +52,10 @@ public class NotificationController {
             return ResponseEntity.notFound().build();
         }
 
+        System.out.println("update statusa");
         notification.setStatus(NotificationStatus.valueOf(status));
         notificationService.save(notification);
-
+        System.out.println(notification.getStatus());
         return ResponseEntity.ok(NotificationMapper.toDTO(notification));
     }
 }
