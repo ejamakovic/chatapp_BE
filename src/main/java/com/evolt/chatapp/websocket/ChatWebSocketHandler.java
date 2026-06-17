@@ -1,13 +1,10 @@
 package com.evolt.chatapp.websocket;
 
 import com.evolt.chatapp.events.WebSocketEvent;
-import com.evolt.chatapp.models.Message;
 import com.evolt.chatapp.models.Notification;
 import com.evolt.chatapp.models.dto.MessageDto;
-import com.evolt.chatapp.models.enums.MessageStatus;
 import com.evolt.chatapp.models.enums.NotificationStatus;
 import com.evolt.chatapp.services.ConversationMemberService;
-import com.evolt.chatapp.services.MessageService;
 import com.evolt.chatapp.services.NotificationService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.transaction.Transactional;
@@ -35,15 +32,13 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
     private final ObjectMapper objectMapper;
     private final ConversationMemberService conversationMemberService;
     private final NotificationService notificationService;
-    private final MessageService messageService;
 
     public ChatWebSocketHandler(ObjectMapper objectMapper,
                                 ConversationMemberService conversationMemberService,
-                                NotificationService notificationService, MessageService messageService) {
+                                NotificationService notificationService) {
         this.objectMapper = objectMapper;
         this.conversationMemberService = conversationMemberService;
         this.notificationService = notificationService;
-        this.messageService = messageService;
     }
 
     // --- CENTRALIZED EVENT ROUTER ---

@@ -11,6 +11,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 @Repository
@@ -25,8 +26,9 @@ public interface ConversationRepository extends JpaRepository<Conversation, Long
     @Query("""
     SELECT new com.evolt.chatapp.models.dto.ConversationListDto(
         c.id,
+        c.name,
+        c.imageUrl,
         m.content,
-        s.id,
         s.username,
         m.timestamp,
         (SELECT COUNT(msg) FROM Message msg 

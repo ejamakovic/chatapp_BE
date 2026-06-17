@@ -16,12 +16,16 @@ public class ConversationListDto {
 
     public ConversationListDto(
             Long id,
+            String name,
+            String imageUrl,
             String lastMessage,
             String senderUsername,
             LocalDateTime timestamp,
             Long unreadCount
     ) {
         this.id = id;
+        this.name = name;
+        this.imageUrl = imageUrl;
         this.lastMessage = lastMessage;
         this.senderUsername = senderUsername;
         this.unreadCount = unreadCount;
@@ -44,14 +48,6 @@ public class ConversationListDto {
 
     public void setLastMessage(String lastMessage) {
         this.lastMessage = lastMessage;
-    }
-
-    public Long getSenderId() {
-        return senderId;
-    }
-
-    public void setSenderId(Long senderId) {
-        this.senderId = senderId;
     }
 
     public String getSenderUsername() {

@@ -74,5 +74,4 @@ public class MessageController {
         );
         return ResponseEntity.ok(dto);
     }
-
 }

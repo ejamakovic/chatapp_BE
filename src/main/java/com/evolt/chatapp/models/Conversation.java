@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -25,12 +26,8 @@ public class Conversation {
     private ConversationType type;
 
     @JsonIgnore
-    @OneToMany(
-            mappedBy = "conversation",
-            cascade = CascadeType.ALL,
-            orphanRemoval = true
-    )
-    private List<ConversationMember> members;
+    @OneToMany(mappedBy = "conversation", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ConversationMember> members = new ArrayList<>();
 
     @JsonIgnore
     @OneToOne(fetch = FetchType.LAZY)
@@ -54,8 +51,6 @@ public class Conversation {
         this.name = name;
         this.imageUrl = imageUrl;
     }
-
-
 
     public Conversation(Long id, ConversationType type, List<ConversationMember> members, String name, String imageUrl, LocalDateTime createdAt) {
         this.id = id;
