@@ -61,17 +61,10 @@ public class ConversationController {
             @PathVariable Long conversationId,
             @RequestBody java.util.Map<String, Object> payload
     ) {
-        // 🔍 LOG 5: Log incoming request parameters at controller boundary
-        logger.info("📥 Received PATCH layout for Conversation ID: {} | Raw Payload: {}", conversationId, payload);
-
-        // Explicitly parse values safely
         Long userId = payload.get("userId") != null ? Long.valueOf(payload.get("userId").toString()) : null;
         Long lastSeenMessageId = payload.get("lastSeenMessageId") != null ? Long.valueOf(payload.get("lastSeenMessageId").toString()) : null;
 
-        logger.info("🔍 Extracted parameters -> userId: {}, lastSeenMessageId: {}", userId, lastSeenMessageId);
-
         if (userId == null || lastSeenMessageId == null) {
-            logger.warn("⚠️ Aborting update: Extracted payload values contain null identifiers.");
             return ResponseEntity.badRequest().build();
         }
 
