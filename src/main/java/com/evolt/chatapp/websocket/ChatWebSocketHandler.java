@@ -2,10 +2,12 @@ package com.evolt.chatapp.websocket;
 
 import com.evolt.chatapp.events.WebSocketEvent;
 import com.evolt.chatapp.models.Notification;
+import com.evolt.chatapp.models.User;
 import com.evolt.chatapp.models.dto.MessageDto;
 import com.evolt.chatapp.models.enums.NotificationStatus;
 import com.evolt.chatapp.services.ConversationMemberService;
 import com.evolt.chatapp.services.NotificationService;
+import com.evolt.chatapp.services.UserService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.transaction.Transactional;
 import org.slf4j.Logger;
@@ -32,13 +34,15 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
     private final ObjectMapper objectMapper;
     private final ConversationMemberService conversationMemberService;
     private final NotificationService notificationService;
+    private final UserService userService;
 
     public ChatWebSocketHandler(ObjectMapper objectMapper,
                                 ConversationMemberService conversationMemberService,
-                                NotificationService notificationService) {
+                                NotificationService notificationService, UserService userService) {
         this.objectMapper = objectMapper;
         this.conversationMemberService = conversationMemberService;
         this.notificationService = notificationService;
+        this.userService = userService;
     }
 
     // --- CENTRALIZED EVENT ROUTER ---
@@ -75,10 +79,12 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         }
     }
 
+
     // --- CONNECTION HANDLERS ---
     @Override
     @Transactional
     public void afterConnectionEstablished(WebSocketSession session) {
+        logger.info("afterConnectionEstablished called");
         String username = (String) session.getAttributes().get("username");
         Long id = (Long) session.getAttributes().get("id");
 
@@ -86,6 +92,8 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
 
         userSessions.put(username, session);
         logger.info("User connected: {}", username);
+
+        userService.setConnected(id, true);
 
         // Fetch and flush missed offline notifications
         List<Notification> notifications = notificationService.findAllPendingFromUser(id);
@@ -97,10 +105,13 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
 
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) {
+        logger.info("afterConnectionClosed called");
         String username = (String) session.getAttributes().get("username");
+        Long id = (Long) session.getAttributes().get("id");
         if (username != null) {
             userSessions.remove(username);
             logger.info("User disconnected: {}", username);
+            userService.setConnected(id, false);
         }
     }
 

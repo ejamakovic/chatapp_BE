@@ -91,7 +91,7 @@ public class UserService {
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setFirstName(request.getFirstName());
         user.setLastName(request.getLastName());
-        user.setConnected(false);   // set to true on first WebSocket connect
+        user.setConnected(false);
 
         User saved = userRepository.save(user);
 
