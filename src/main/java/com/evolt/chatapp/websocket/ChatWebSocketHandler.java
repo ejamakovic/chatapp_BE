@@ -76,7 +76,6 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
     }
 
     // --- CONNECTION HANDLERS ---
-
     @Override
     @Transactional
     public void afterConnectionEstablished(WebSocketSession session) {

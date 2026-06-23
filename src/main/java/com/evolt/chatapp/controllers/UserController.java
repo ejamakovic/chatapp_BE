@@ -33,7 +33,7 @@ public class UserController {
         return ResponseEntity.ok(userService.createIfNotExists(userDTO.getUsername()));
     }
 
-    @PutMapping("/logout")
+    @PatchMapping("/logout")
     public ResponseEntity<Void> logoutUser(@RequestBody UserDto userDTO) {
 
         User user = userService.findByUsername(userDTO.getUsername());
