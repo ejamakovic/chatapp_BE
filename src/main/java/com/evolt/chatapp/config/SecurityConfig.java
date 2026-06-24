@@ -44,21 +44,11 @@ public class SecurityConfig {
 
                 // ── Route-level authorization ─────────────────────────────────────
                 .authorizeHttpRequests(auth -> auth
-
-                        // Public auth endpoints
                         .requestMatchers("/auth/login", "/auth/register", "/auth/refresh").permitAll()
-
-                        // Static file serving (avatar uploads, etc.)
                         .requestMatchers("/uploads/**").permitAll()
-
-                        // WebSocket upgrade — auth is handled by WebSocketAuthInterceptor
                         .requestMatchers("/ws/**").permitAll()
-
-                        // Admin-only management routes
                         .requestMatchers(HttpMethod.DELETE, "/messages/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.GET,    "/users").hasRole("ADMIN")
-
-                        // Everything else requires a valid (any role) JWT
+                        .requestMatchers(HttpMethod.GET, "/users").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
 

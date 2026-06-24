@@ -22,7 +22,8 @@ public class JwtFilter extends OncePerRequestFilter {
             "/auth/login",
             "/auth/register",
             "/auth/refresh",
-            "/error"
+            "/error",
+            "/ws"
     );
 
     private final JwtService jwtService;
@@ -44,6 +45,8 @@ public class JwtFilter extends OncePerRequestFilter {
         }
 
         String path = request.getRequestURI();
+        String upgrade = request.getHeader("Upgrade");
+        System.out.println("JwtFilter hit: " + path + " upgrade=" + upgrade);
         if (isPublic(path)) {
             chain.doFilter(request, response);
             return;

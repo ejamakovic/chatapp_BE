@@ -1,6 +1,6 @@
 package com.evolt.chatapp.services;
 
-import com.evolt.chatapp.events.WebSocketEvent;
+import com.evolt.chatapp.websocket.WebSocketEvent;
 import com.evolt.chatapp.models.Notification;
 import com.evolt.chatapp.models.User;
 import com.evolt.chatapp.models.dto.UserDto;
@@ -53,9 +53,8 @@ public class NotificationService {
 
             notification.setTimestamp(LocalDateTime.now());
 
-            notificationRepository.save(notification);
-
-            eventPublisher.publishEvent(new WebSocketEvent<>("NOTIFICATION", notification));
+            Notification saved = notificationRepository.saveAndFlush(notification);
+            eventPublisher.publishEvent(new WebSocketEvent<>("NOTIFICATION", saved));
         }
     }
 

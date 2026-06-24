@@ -1,6 +1,6 @@
 package com.evolt.chatapp.services;
 
-import com.evolt.chatapp.events.WebSocketEvent;
+import com.evolt.chatapp.websocket.WebSocketEvent;
 import com.evolt.chatapp.models.*;
 import com.evolt.chatapp.models.dto.MessageDto;
 import com.evolt.chatapp.repositories.ConversationRepository;

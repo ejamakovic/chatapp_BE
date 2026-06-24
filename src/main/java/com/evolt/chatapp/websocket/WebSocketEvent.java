@@ -1,4 +1,4 @@
-package com.evolt.chatapp.events;
+package com.evolt.chatapp.websocket;
 
 public class WebSocketEvent<T> {
     private final String eventType;

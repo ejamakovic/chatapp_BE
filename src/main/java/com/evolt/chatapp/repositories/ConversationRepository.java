@@ -3,7 +3,6 @@ package com.evolt.chatapp.repositories;
 import com.evolt.chatapp.models.Conversation;
 import com.evolt.chatapp.models.Message;
 import com.evolt.chatapp.models.dto.ConversationListDto;
-import com.evolt.chatapp.models.enums.ConversationType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -12,8 +11,6 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.time.LocalDateTime;
-import java.util.Arrays;
 import java.util.Optional;
 
 @Repository
@@ -21,7 +18,7 @@ public interface ConversationRepository extends JpaRepository<Conversation, Long
 
     @Query("""
     SELECT DISTINCT c FROM Conversation c
-    WHERE c.type = "GLOBAL"
+    WHERE c.type = 'GLOBAL'
 """)
     Conversation findGlobalConversation();
 
@@ -75,6 +72,4 @@ WHERE c.id = :conversationId
             @Param("message") Message message
     );
 
-
-    Arrays findByType(ConversationType conversationType);
 }

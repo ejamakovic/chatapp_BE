@@ -18,7 +18,6 @@ public class WebSocketAuthInterceptor implements HandshakeInterceptor {
     public WebSocketAuthInterceptor(JwtService jwtService) {
         this.jwtService = jwtService;
     }
-
     @Override
     public boolean beforeHandshake(
             ServerHttpRequest request,
@@ -27,40 +26,30 @@ public class WebSocketAuthInterceptor implements HandshakeInterceptor {
             Map<String, Object> attributes) {
 
         String query = request.getURI().getQuery();
+        if (query == null) return false;
 
-        if (query == null || !query.contains("token=")) {
+        String token = null;
+        for (String pair : query.split("&")) {
+            String[] kv = pair.split("=", 2);
+            if (kv.length == 2 && "token".equals(
+                    URLDecoder.decode(kv[0], StandardCharsets.UTF_8))) {
+                token = URLDecoder.decode(kv[1], StandardCharsets.UTF_8);
+                break;
+            }
+        }
+
+        if (token == null || token.isBlank() || !jwtService.isTokenValid(token)) {
             return false;
         }
 
-        try {
-            // Clean parsing to separate token from potential subsequent parameters (&)
-            String token = null;
-            String[] pairs = query.split("&");
-            for (String pair : pairs) {
-                int idx = pair.indexOf("=");
-                if (idx > 0 && URLDecoder.decode(pair.substring(0, idx), StandardCharsets.UTF_8).equals("token")) {
-                    token = URLDecoder.decode(pair.substring(idx + 1), StandardCharsets.UTF_8);
-                    break;
-                }
-            }
+        String username = jwtService.extractUsername(token);
+        Long id = Long.valueOf(jwtService.extractUserId(token));
 
-            if (token == null || !jwtService.isTokenValid(token)) {
-                return false; // Safely drops handshake if token is corrupt or expired
-            }
+        if (username == null) return false;
 
-            String username = jwtService.extractUsername(token);
-            Long id = Long.valueOf(jwtService.extractUserId(token));
-
-            if (username == null) return false;
-
-            attributes.put("username", username);
-            attributes.put("id", id);
-
-            return true;
-
-        } catch (Exception e) {
-            return false;
-        }
+        attributes.put("username", username);
+        attributes.put("id", id);
+        return true;
     }
 
     @Override

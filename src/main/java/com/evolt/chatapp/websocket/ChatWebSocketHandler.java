@@ -1,8 +1,6 @@
 package com.evolt.chatapp.websocket;
 
-import com.evolt.chatapp.events.WebSocketEvent;
 import com.evolt.chatapp.models.Notification;
-import com.evolt.chatapp.models.User;
 import com.evolt.chatapp.models.dto.MessageDto;
 import com.evolt.chatapp.models.enums.NotificationStatus;
 import com.evolt.chatapp.services.ConversationMemberService;
@@ -105,13 +103,23 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
 
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) {
-        logger.info("afterConnectionClosed called");
+        logger.info("afterConnectionClosed called with status: {}", status);
         String username = (String) session.getAttributes().get("username");
         Long id = (Long) session.getAttributes().get("id");
+
         if (username != null) {
             userSessions.remove(username);
             logger.info("User disconnected: {}", username);
-            userService.setConnected(id, false);
+
+            if (id != null) {
+                try {
+                    userService.setConnected(id, false);
+                } catch (org.springframework.transaction.CannotCreateTransactionException | IllegalStateException e) {
+                    logger.warn("Could not mark user {} offline because the database context is shutting down.", username);
+                } catch (Exception e) {
+                    logger.error("Unexpected error marking user {} offline", username, e);
+                }
+            }
         }
     }
 
