@@ -13,8 +13,12 @@ import java.util.List;
 public interface NotificationRepository extends JpaRepository<Notification, Long> {
 
     @Query("""
-    SELECT n FROM Notification n 
-    WHERE n.recipient.id = :userId 
+    SELECT n FROM Notification n
+    WHERE n.recipient.id = :userId
+      AND (
+            n.type <> com.evolt.chatapp.models.enums.NotificationType.FRIEND_REQUEST
+            OR n.status <> com.evolt.chatapp.models.enums.NotificationStatus.OPENED
+          )
     ORDER BY n.timestamp DESC
 """)
     List<Notification> findByUserId(Long userId);
@@ -35,4 +39,13 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
     WHERE n.recipient.id = :userId AND n.status = com.evolt.chatapp.models.enums.NotificationStatus.PENDING
 """)
     void markAllAsDelivered(Long userId);
+
+    @Modifying
+    @Query("""
+    UPDATE Notification n
+    SET n.status = com.evolt.chatapp.models.enums.NotificationStatus.OPENED
+    WHERE n.referenceId = :friendshipId
+      AND n.type = com.evolt.chatapp.models.enums.NotificationType.FRIEND_REQUEST
+""")
+    void closeFriendRequestNotification(Long friendshipId);
 }

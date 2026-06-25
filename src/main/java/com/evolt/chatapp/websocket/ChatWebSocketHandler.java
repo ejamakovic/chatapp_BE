@@ -62,7 +62,6 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
             }
             case "NOTIFICATION" -> {
                 Notification notification = (Notification) event.getPayload();
-
                 boolean delivered = sendToUser(
                         notification.getRecipient().getUsername(),
                         new SocketPayloads.NotificationPayload(notification)

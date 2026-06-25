@@ -9,7 +9,9 @@ import com.evolt.chatapp.models.enums.NotificationType;
 import com.evolt.chatapp.repositories.FriendshipRepository;
 import com.evolt.chatapp.repositories.NotificationRepository;
 import com.evolt.chatapp.repositories.UserRepository;
+import com.evolt.chatapp.websocket.WebSocketEvent;
 import jakarta.transaction.Transactional;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 
@@ -19,15 +21,18 @@ public class FriendshipService {
     private final FriendshipRepository friendshipRepository;
     private final UserRepository userRepository;
     private final NotificationRepository notificationRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     public FriendshipService(
             FriendshipRepository friendshipRepository,
             UserRepository userRepository,
-            NotificationRepository notificationRepository)
+            NotificationRepository notificationRepository,
+            ApplicationEventPublisher eventPublisher)
     {
         this.friendshipRepository = friendshipRepository;
         this.userRepository = userRepository;
         this.notificationRepository = notificationRepository;
+        this.eventPublisher = eventPublisher;
     }
 
     @Transactional
@@ -55,19 +60,21 @@ public class FriendshipService {
                 addressee,
                 NotificationType.FRIEND_REQUEST,
                 friendship.getId(),
-                "New friend request from" + requester.getUsername(),
+                "New friend request from " + requester.getUsername(),
                 NotificationStatus.PENDING,
                 LocalDateTime.now()
         );
-
         notificationRepository.save(notification);
+        eventPublisher.publishEvent(new WebSocketEvent<>("NOTIFICATION", notification));
     }
 
     @Transactional
     public void updateFriendship(Long id, String status) {
         Friendship friendship = friendshipRepository.getReferenceById(id);
+
         friendship.setStatus(FriendshipStatus.valueOf(status));
-        friendshipRepository.save(friendship);
+
+        notificationRepository.closeFriendRequestNotification(id);
     }
 
 }

@@ -13,6 +13,3 @@ Attachment (you likely have this but extend it) — add mimeType, fileSize, thum
 Nice-to-have new models
 ReadReceipt — a separate table of (message, user, readAt) gives you per-user per-message read status (like WhatsApp's double blue tick). Your current lastSeenMessageId on ConversationMember is a cheaper approximation — use the separate table only when you actually want to show who specifically read each message.
 MessagePin — if you want multiple pinned messages per conversation (Slack/Telegram style), promote the pinnedMessage FK on Conversation into its own table with pinnedBy and pinnedAt.
-
-One model you'll need later
-Friendship / Contact — when you add social features (follow, friend request, block), you'll want a UserRelationship table with requester, addressee, status (PENDING, ACCEPTED, BLOCKED), and createdAt. Build it when you're ready for that feature, not now.
