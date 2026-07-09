@@ -4,6 +4,8 @@ import com.evolt.chatapp.models.Conversation;
 import com.evolt.chatapp.models.ConversationMember;
 import com.evolt.chatapp.models.User;
 import com.evolt.chatapp.models.dto.RegisterRequest;
+import com.evolt.chatapp.models.dto.UpdateProfileRequest;
+import com.evolt.chatapp.models.dto.UserDto;
 import com.evolt.chatapp.models.enums.ConversationRole;
 import com.evolt.chatapp.repositories.ConversationMemberRepository;
 import com.evolt.chatapp.repositories.ConversationRepository;
@@ -63,6 +65,21 @@ public class UserService {
         return userRepository.findByEmail(email);
     }
 
+    /**
+     * Returns a UserDto for public viewing (someone else's profile page).
+     * Email is stripped unless the requester is viewing their own profile or is an admin.
+     */
+    public UserDto getPublicProfile(Long targetId, Long requesterId, boolean requesterIsAdmin) {
+        User user = userRepository.findById(targetId).orElse(null);
+        if (user == null) return null;
+
+        UserDto dto = new UserDto(user);
+        if (!targetId.equals(requesterId) && !requesterIsAdmin) {
+            dto.setEmail(null);
+        }
+        return dto;
+    }
+
     // ── Mutations ─────────────────────────────────────────────────────────────
 
     @Transactional
@@ -70,12 +87,6 @@ public class UserService {
         return userRepository.save(user);
     }
 
-    /**
-     * Registers a brand-new user account.
-     * Hashes the password, adds them to the global chat, returns the saved entity.
-     *
-     * @throws IllegalArgumentException if username or email is already taken.
-     */
     @Transactional
     public User register(RegisterRequest request) {
         if (userRepository.findByUsername(request.getUsername()) != null) {
@@ -95,7 +106,6 @@ public class UserService {
 
         User saved = userRepository.save(user);
 
-        // Auto-join global chat
         Conversation globalChat = conversationRepository.findGlobalConversation();
         if (globalChat != null) {
             ConversationMember member = new ConversationMember(
@@ -106,17 +116,10 @@ public class UserService {
         return saved;
     }
 
-    /**
-     * Verifies a plain-text password against the stored BCrypt hash.
-     */
     public boolean checkPassword(User user, String rawPassword) {
         return passwordEncoder.matches(rawPassword, user.getPassword());
     }
 
-    /**
-     * Saves a new avatar image for the user and returns the public URL.
-     * Stores under uploads/avatars/ to keep avatars separate from message attachments.
-     */
     @Transactional
     public String updateAvatar(Long userId, MultipartFile file) throws IOException {
         String contentType = file.getContentType();
@@ -141,6 +144,36 @@ public class UserService {
         userRepository.save(user);
 
         return publicUrl;
+    }
+
+    /**
+     * Updates editable profile fields. Email uniqueness is re-checked when changed.
+     * avatarUrl is deliberately NOT settable here — only via updateAvatar().
+     */
+    @Transactional
+    public User updateProfile(Long userId, UpdateProfileRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        if (request.getEmail() != null && !request.getEmail().equalsIgnoreCase(user.getEmail())) {
+            User existing = userRepository.findByEmail(request.getEmail());
+            if (existing != null && !existing.getId().equals(userId)) {
+                throw new IllegalArgumentException("Email already registered");
+            }
+            user.setEmail(request.getEmail());
+        }
+
+        if (request.getFirstName() != null) {
+            user.setFirstName(request.getFirstName());
+        }
+        if (request.getLastName() != null) {
+            user.setLastName(request.getLastName());
+        }
+        if (request.getBio() != null) {
+            user.setBio(request.getBio());
+        }
+
+        return userRepository.save(user);
     }
 
     @Transactional

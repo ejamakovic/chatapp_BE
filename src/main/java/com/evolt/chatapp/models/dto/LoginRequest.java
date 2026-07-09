@@ -1,11 +1,13 @@
 package com.evolt.chatapp.models.dto;
 
-/**
- * Request body for POST /auth/login
- */
+import jakarta.validation.constraints.NotBlank;
+
 public class LoginRequest {
 
+    @NotBlank(message = "Username is required")
     private String username;
+
+    @NotBlank(message = "Password is required")
     private String password;
 
     public LoginRequest() {}

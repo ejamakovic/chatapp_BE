@@ -9,7 +9,10 @@ public class StaticResourceConfig implements WebMvcConfigurer {
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        registry.addResourceHandler("/uploads/**")
-                .addResourceLocations("file:uploads/");
+        // Only avatars are public. Message attachments and post images go
+        // through their own secured controllers (/attachments/{id},
+        // /posts/{id}/image) which check membership/visibility first.
+        registry.addResourceHandler("/uploads/avatars/**")
+                .addResourceLocations("file:uploads/avatars/");
     }
 }

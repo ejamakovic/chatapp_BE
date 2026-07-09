@@ -15,8 +15,10 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 public class ConversationService {
@@ -91,5 +93,39 @@ public class ConversationService {
             return conversation.get();
         }
         return null;
+    }
+
+    /**
+     * Creates a new GROUP conversation. The first member becomes OWNER,
+     * everyone else joins as MEMBER. Requires at least 2 distinct members.
+     */
+    @Transactional
+    public Conversation createGroupConversation(String name, List<Long> memberIds) {
+        if (name == null || name.isBlank()) {
+            throw new IllegalArgumentException("Group name is required");
+        }
+        if (memberIds == null) {
+            throw new IllegalArgumentException("At least 2 members are required");
+        }
+
+        Set<Long> uniqueMemberIds = new LinkedHashSet<>(memberIds);
+        if (uniqueMemberIds.size() < 2) {
+            throw new IllegalArgumentException("At least 2 distinct members are required");
+        }
+
+        Conversation conversation = new Conversation();
+        conversation.setType(ConversationType.GROUP);
+        conversation.setName(name.trim());
+        conversation = conversationRepository.save(conversation);
+
+        boolean first = true;
+        for (Long memberId : uniqueMemberIds) {
+            User user = userRepository.getReferenceById(memberId);
+            ConversationRole role = first ? ConversationRole.OWNER : ConversationRole.MEMBER;
+            conversationMemberRepository.save(new ConversationMember(conversation, user, role));
+            first = false;
+        }
+
+        return conversation;
     }
 }

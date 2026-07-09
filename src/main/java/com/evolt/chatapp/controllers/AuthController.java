@@ -10,6 +10,7 @@ import com.evolt.chatapp.services.UserService;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -26,12 +27,10 @@ public class AuthController {
         this.userService = userService;
     }
 
-    // ── POST /auth/register ───────────────────────────────────────────────────
-
     @PostMapping("/register")
     public ResponseEntity<?> register(
-            @RequestBody  RegisterRequest  body,
-            HttpServletResponse            response
+            @Valid @RequestBody RegisterRequest body,
+            HttpServletResponse response
     ) {
         try {
             User user = userService.register(body);
@@ -43,12 +42,10 @@ public class AuthController {
         }
     }
 
-    // ── POST /auth/login ──────────────────────────────────────────────────────
-
     @PostMapping("/login")
     public ResponseEntity<?> login(
-            @RequestBody  LoginRequest     body,
-            HttpServletResponse            response
+            @Valid @RequestBody LoginRequest body,
+            HttpServletResponse response
     ) {
         User user = userService.findByUsername(body.getUsername());
 
@@ -61,12 +58,6 @@ public class AuthController {
         return ResponseEntity.ok(buildAuthResponse(user, response));
     }
 
-    // ── POST /auth/refresh ────────────────────────────────────────────────────
-
-    /**
-     * Accepts the refresh token from the HttpOnly cookie and issues a new access token.
-     * The refresh token itself is also rotated (old one invalidated by issuing a new one).
-     */
     @PostMapping("/refresh")
     public ResponseEntity<?> refresh(
             @CookieValue(value = "refreshToken", required = false) String refreshToken,
@@ -86,8 +77,6 @@ public class AuthController {
         return ResponseEntity.ok(buildAuthResponse(user, response));
     }
 
-    // ── GET /auth/me ──────────────────────────────────────────────────────────
-
     @GetMapping("/me")
     public ResponseEntity<?> me(HttpServletRequest request) {
         String userId = (String) request.getAttribute("userId");
@@ -101,21 +90,17 @@ public class AuthController {
         return ResponseEntity.ok(new UserDto(user));
     }
 
-    // ── POST /auth/logout ─────────────────────────────────────────────────────
-
     @PostMapping("/logout")
     public ResponseEntity<Void> logout(
             HttpServletRequest  request,
             HttpServletResponse response
     ) {
-        // Clear the HttpOnly cookie on the client side
         Cookie clear = new Cookie("refreshToken", "");
         clear.setMaxAge(0);
         clear.setHttpOnly(true);
         clear.setPath("/");
         response.addCookie(clear);
 
-        // Optionally mark user as offline
         String userId = (String) request.getAttribute("userId");
         if (userId != null) {
             userService.setConnected(Long.valueOf(userId), false);
@@ -124,19 +109,16 @@ public class AuthController {
         return ResponseEntity.ok().build();
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────────────
-
     private AuthResponse buildAuthResponse(User user, HttpServletResponse response) {
         String role         = user.getRole().name();
         String accessToken  = jwtService.generateAccessToken(user.getId(), user.getUsername(), role);
         String refreshToken = jwtService.generateRefreshToken(user.getId(), user.getUsername(), role);
 
-        // Refresh token in HttpOnly cookie — JS cannot read it
         Cookie cookie = new Cookie("refreshToken", refreshToken);
         cookie.setHttpOnly(true);
-        cookie.setSecure(true);       // send only over HTTPS in production
+        cookie.setSecure(true);
         cookie.setPath("/auth/refresh");
-        cookie.setMaxAge(7 * 24 * 60 * 60);   // 7 days
+        cookie.setMaxAge(7 * 24 * 60 * 60);
         response.addCookie(cookie);
 
         return new AuthResponse(accessToken, refreshToken, new UserDto(user));

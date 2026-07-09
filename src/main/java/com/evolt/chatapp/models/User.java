@@ -22,9 +22,6 @@ public class User {
     @Column(nullable = false, unique = true, length = 50)
     private String username;
 
-    /**
-     * BCrypt-hashed password — never store plain text.
-     */
     @Column(nullable = false)
     private String password;
 
@@ -37,11 +34,11 @@ public class User {
     @Column(length = 100)
     private String lastName;
 
-    /**
-     * Relative URL served by the static-resource handler, e.g. /uploads/avatars/uuid.jpg
-     */
     @Column(length = 512)
     private String avatarUrl;
+
+    @Column(length = 500)
+    private String bio;
 
     @Column(nullable = false)
     private boolean connected = false;
@@ -60,8 +57,6 @@ public class User {
         this.email    = email;
         this.password = password;
     }
-
-    // ── Getters & Setters ────────────────────────────────────────────────────
 
     public Long getId()                        { return id; }
     public void setId(Long id)                 { this.id = id; }
@@ -83,6 +78,9 @@ public class User {
 
     public String getAvatarUrl()               { return avatarUrl; }
     public void setAvatarUrl(String avatarUrl) { this.avatarUrl = avatarUrl; }
+
+    public String getBio()                     { return bio; }
+    public void setBio(String bio)             { this.bio = bio; }
 
     public boolean isConnected()               { return connected; }
     public void setConnected(boolean connected){ this.connected = connected; }

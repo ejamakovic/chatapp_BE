@@ -2,9 +2,6 @@ package com.evolt.chatapp.models.dto;
 
 import com.evolt.chatapp.models.User;
 
-/**
- * Read-only transport object for User.
- */
 public class UserDto {
 
     private Long   id;
@@ -13,11 +10,11 @@ public class UserDto {
     private String firstName;
     private String lastName;
     private String avatarUrl;
+    private String bio;
     private String role;
 
     public UserDto() {}
 
-    /** Convenience constructor used in mappers and WebSocket payloads. */
     public UserDto(User user) {
         this.id        = user.getId();
         this.username  = user.getUsername();
@@ -25,6 +22,7 @@ public class UserDto {
         this.firstName = user.getFirstName();
         this.lastName  = user.getLastName();
         this.avatarUrl = user.getAvatarUrl();
+        this.bio       = user.getBio();
         this.role      = user.getRole().name();
     }
 
@@ -32,8 +30,6 @@ public class UserDto {
         this.id       = id;
         this.username = username;
     }
-
-    // ── Getters & Setters ────────────────────────────────────────────────────
 
     public Long   getId()                      { return id; }
     public void   setId(Long id)               { this.id = id; }
@@ -52,6 +48,9 @@ public class UserDto {
 
     public String getAvatarUrl()               { return avatarUrl; }
     public void   setAvatarUrl(String v)       { this.avatarUrl = v; }
+
+    public String getBio()                     { return bio; }
+    public void   setBio(String bio)           { this.bio = bio; }
 
     public String getRole()                    { return role; }
     public void   setRole(String role)         { this.role = role; }
