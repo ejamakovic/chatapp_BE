@@ -41,8 +41,15 @@ public class PostController {
             @RequestParam(defaultValue = "20") int size,
             HttpServletRequest request
     ) {
+
         Long requesterId = currentUserId(request);
-        return ResponseEntity.ok(postService.getUserPosts(userId, requesterId, page, size));
+
+        System.out.println("PROFILE USER: " + userId);
+        System.out.println("REQUESTER: " + requesterId);
+
+        return ResponseEntity.ok(
+                postService.getUserPosts(userId, requesterId, page, size)
+        );
     }
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)

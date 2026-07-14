@@ -12,22 +12,26 @@ import org.springframework.stereotype.Repository;
 public interface PostRepository extends JpaRepository<Post, Long> {
 
     @Query("""
-        SELECT p FROM Post p
-        WHERE p.author.id = :authorId
-        AND (
-            :requesterId = :authorId
-            OR p.privacy = com.evolt.chatapp.models.enums.PostPrivacy.PUBLIC
-            OR (p.privacy = com.evolt.chatapp.models.enums.PostPrivacy.FRIENDS AND EXISTS (
+    SELECT p FROM Post p
+    WHERE p.author.id = :authorId
+    AND (
+        :requesterId IS NULL
+        OR :requesterId = :authorId
+        OR p.privacy = com.evolt.chatapp.models.enums.PostPrivacy.PUBLIC
+        OR (
+            p.privacy = com.evolt.chatapp.models.enums.PostPrivacy.FRIENDS
+            AND EXISTS (
                 SELECT f FROM Friendship f
                 WHERE f.status = com.evolt.chatapp.models.enums.FriendshipStatus.ACCEPTED
                 AND (
                     (f.requester.id = :authorId AND f.addressee.id = :requesterId)
-                    OR (f.requester.id = :requesterId AND f.addressee.id = :authorId)
+                    OR
+                    (f.requester.id = :requesterId AND f.addressee.id = :authorId)
                 )
-            ))
+            )
         )
-        ORDER BY p.createdAt DESC
-    """)
+    )
+""")
     Page<Post> findVisiblePostsByAuthor(
             @Param("authorId") Long authorId,
             @Param("requesterId") Long requesterId,

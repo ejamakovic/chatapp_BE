@@ -51,7 +51,7 @@ public class UserController {
             HttpServletRequest request
     ) {
         String requesterId = (String) request.getAttribute("userId");
-        if (!isAdminOrSelf(requesterId, id, request)) {
+        if (isAdminOrSelf(requesterId, id, request)) {
             return ResponseEntity.status(403).build();
         }
         User user = userService.findById(id);
@@ -61,7 +61,7 @@ public class UserController {
 
     /**
      * Public profile fetch — any authenticated user can view any profile.
-     * Email is stripped unless viewing your own profile or you're an admin.
+     * Email is stripped unless viewing your own profile, or you're an admin.
      */
     @GetMapping("/{id}/profile")
     public ResponseEntity<UserDto> getProfile(
@@ -87,7 +87,7 @@ public class UserController {
             HttpServletRequest request
     ) {
         String requesterId = (String) request.getAttribute("userId");
-        if (!isAdminOrSelf(requesterId, id, request)) {
+        if (isAdminOrSelf(requesterId, id, request)) {
             return ResponseEntity.status(403).build();
         }
         try {
@@ -106,7 +106,7 @@ public class UserController {
             HttpServletRequest request
     ) {
         String requesterId = (String) request.getAttribute("userId");
-        if (!isAdminOrSelf(requesterId, id, request)) {
+        if (isAdminOrSelf(requesterId, id, request)) {
             return ResponseEntity.status(403).build();
         }
         try {
@@ -135,8 +135,8 @@ public class UserController {
     public record AvatarResponse(String avatarUrl) {}
 
     private boolean isAdminOrSelf(String requesterId, Long targetId, HttpServletRequest request) {
-        if (requesterId == null) return false;
-        if (Long.valueOf(requesterId).equals(targetId)) return true;
-        return request.isUserInRole("ROLE_ADMIN");
+        if (requesterId == null) return true;
+        if (Long.valueOf(requesterId).equals(targetId)) return false;
+        return !request.isUserInRole("ROLE_ADMIN");
     }
 }
