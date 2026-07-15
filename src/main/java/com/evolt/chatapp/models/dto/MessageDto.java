@@ -2,10 +2,12 @@ package com.evolt.chatapp.models.dto;
 
 import com.evolt.chatapp.models.Attachment;
 import com.evolt.chatapp.models.Message;
+import com.evolt.chatapp.models.MessageReaction;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+
 public class MessageDto {
 
     private Long id;
@@ -21,6 +23,8 @@ public class MessageDto {
     private LocalDateTime timestamp;
 
     private List<AttachmentDto> attachments;
+
+    private List<MessageReactionDto> messageReactions;
 
     public MessageDto() {
     }
@@ -38,8 +42,14 @@ public class MessageDto {
             AttachmentDto attachmentDTO = new AttachmentDto(attachment);
             list.add(attachmentDTO);
         }
+        List<MessageReactionDto> messageReactions = new ArrayList<>();
+        for (MessageReaction reaction : message.getMessageReactions()) {
+            MessageReactionDto messageReactionDTO = new MessageReactionDto(reaction);
+            messageReactions.add(messageReactionDTO);
+        }
         this.status = message.getStatus().toString();
         this.attachments = list;
+        this.messageReactions = messageReactions;
         this.conversationId = message.getConversation().getId();
     }
 
@@ -97,5 +107,13 @@ public class MessageDto {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public List<MessageReactionDto> getMessageReactions() {
+        return messageReactions;
+    }
+
+    public void setMessageReactions(List<MessageReactionDto> messageReactions) {
+        this.messageReactions = messageReactions;
     }
 }

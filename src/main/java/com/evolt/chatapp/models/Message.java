@@ -50,12 +50,11 @@ public class Message {
     @Column(nullable = false, updatable = false)
     private LocalDateTime timestamp = LocalDateTime.now();
 
-    @OneToMany(
-            mappedBy = "message",
-            cascade = CascadeType.ALL,
-            orphanRemoval = true
-    )
+    @OneToMany(mappedBy = "message", fetch = FetchType.LAZY)
     private List<Attachment> attachments = new ArrayList<>();
+
+    @OneToMany(mappedBy = "message", fetch = FetchType.LAZY)
+    private List<MessageReaction> messageReactions = new ArrayList<>();
 
     public Message(User sender, Conversation conversation, String content) {
         this.sender = sender;
@@ -154,5 +153,13 @@ public class Message {
 
     public void setAttachments(List<Attachment> attachments) {
         this.attachments = attachments;
+    }
+
+    public List<MessageReaction> getMessageReactions() {
+        return messageReactions;
+    }
+
+    public void setMessageReactions(List<MessageReaction> messageReactions) {
+        this.messageReactions = messageReactions;
     }
 }

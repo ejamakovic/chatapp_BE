@@ -1,6 +1,8 @@
 package com.evolt.chatapp.models;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.Nationalized;
+
 import java.time.LocalDateTime;
 
 @Entity
@@ -27,7 +29,9 @@ public class MessageReaction {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @Column(nullable = false, length = 8)
+    // This tells Hibernate to explicitly use NVARCHAR and handle Unicode emojis
+    @Nationalized
+    @Column(name = "emoji", length = 255)
     private String emoji;
 
     @Column(name = "created_at", nullable = false, updatable = false)
