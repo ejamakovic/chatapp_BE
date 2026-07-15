@@ -4,10 +4,12 @@ import com.evolt.chatapp.models.Message;
 import com.evolt.chatapp.models.dto.MessageDto;
 import com.evolt.chatapp.models.mappers.MessageMapper;
 import com.evolt.chatapp.services.MessageService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -59,19 +61,20 @@ public class MessageController {
     }
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<MessageDto> sendMessage(
-            @RequestParam Long senderId,
+    public ResponseEntity<?> sendMessage(
             @RequestParam Long conversationId,
             @RequestParam String content,
-            @RequestParam(required = false) List<MultipartFile> files
+            @RequestParam(required = false) List<MultipartFile> files,
+            HttpServletRequest request
     ) {
-        MessageDto dto = messageService.saveMessageDTO(
-                senderId,
-                conversationId,
-                content,
-                null,
-                files
-        );
-        return ResponseEntity.ok(dto);
+        Long senderId = Long.parseLong(request.getAttribute("userId").toString());
+        try {
+            MessageDto dto = messageService.saveMessageDTO(senderId, conversationId, content, null, files);
+            return ResponseEntity.ok(dto);
+        } catch (AccessDeniedException e) {
+            return ResponseEntity.status(403).body(e.getMessage());
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 }

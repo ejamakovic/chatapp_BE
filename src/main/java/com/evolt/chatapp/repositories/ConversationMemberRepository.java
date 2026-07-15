@@ -30,4 +30,10 @@ public interface ConversationMemberRepository extends JpaRepository<Conversation
             @Param("conversationId") Long conversationId,
             @Param("messageId") Long messageId
     );
+
+    @Query("""
+    SELECT COUNT(cm) > 0 FROM ConversationMember cm
+    WHERE cm.conversation.id = :conversationId AND cm.user.id = :userId
+""")
+    boolean existsByConversationIdAndUserId(@Param("conversationId") Long conversationId, @Param("userId") Long userId);
 }

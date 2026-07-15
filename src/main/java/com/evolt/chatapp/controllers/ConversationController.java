@@ -5,11 +5,14 @@ import com.evolt.chatapp.models.dto.ConversationListDto;
 import com.evolt.chatapp.models.dto.GroupConversationRequest;
 import com.evolt.chatapp.services.ConversationMemberService;
 import com.evolt.chatapp.services.ConversationService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
 
 @RestController
 @RequestMapping("/conversations")
@@ -50,9 +53,10 @@ public class ConversationController {
 
     @GetMapping("/private")
     public ResponseEntity<Conversation> getOrCreatePrivateConversation(
-            @RequestParam Long senderId,
-            @RequestParam Long receiverId
+            @RequestParam Long receiverId,
+            HttpServletRequest request
     ) {
+        Long senderId = Long.parseLong(request.getAttribute("userId").toString());
         return ResponseEntity.ok(conversationService.findOrCreatePrivateConversation(senderId, receiverId));
     }
 
@@ -70,18 +74,18 @@ public class ConversationController {
     @PatchMapping("/{conversationId}/last-seen")
     public ResponseEntity<Void> updateLastSeenMessage(
             @PathVariable Long conversationId,
-            @RequestBody java.util.Map<String, Object> payload
+            @RequestBody Map<String, Object> payload,
+            HttpServletRequest request
     ) {
-        Long userId = payload.get("userId") != null ? Long.valueOf(payload.get("userId").toString()) : null;
-        Long lastSeenMessageId = payload.get("lastSeenMessageId") != null ? Long.valueOf(payload.get("lastSeenMessageId").toString()) : null;
+        Long userId = Long.parseLong(request.getAttribute("userId").toString());
+        Long lastSeenMessageId = payload.get("lastSeenMessageId") != null
+                ? Long.valueOf(payload.get("lastSeenMessageId").toString()) : null;
 
-        if (userId == null || lastSeenMessageId == null) {
+        if (lastSeenMessageId == null) {
             return ResponseEntity.badRequest().build();
         }
 
         conversationMemberService.updateLastSeenMessage(userId, conversationId, lastSeenMessageId);
-        logger.info("✅ Dispatched update tracking values down to database layer service execution flow.");
-
         return ResponseEntity.ok().build();
     }
 }

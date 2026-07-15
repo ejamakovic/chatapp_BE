@@ -1,7 +1,9 @@
 package com.evolt.chatapp.controllers;
 
 import com.evolt.chatapp.services.FriendshipService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -15,19 +17,28 @@ public class FriendshipController {
     }
 
     @PatchMapping("/{id}/status")
-    public ResponseEntity<Void> updateFriendshipStatus(
+    public ResponseEntity<?> updateFriendshipStatus(
             @PathVariable Long id,
-            @RequestParam String status)
+            @RequestParam String status,
+            HttpServletRequest request)
     {
-        friendshipService.updateFriendship(id, status);
-        return ResponseEntity.ok().build();
+        Long userId = Long.parseLong(request.getAttribute("userId").toString());
+        try {
+            friendshipService.updateFriendship(id, status, userId);
+            return ResponseEntity.ok().build();
+        } catch (AccessDeniedException e) {
+            return ResponseEntity.status(403).body(e.getMessage());
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 
     @PostMapping()
     public ResponseEntity<Void> friendshipUser(
-            @RequestParam Long requesterId,
-            @RequestParam Long addresseeId)
+            @RequestParam Long addresseeId,
+            HttpServletRequest request)
     {
+        Long requesterId = Long.parseLong(request.getAttribute("userId").toString());
         friendshipService.sendRequest(requesterId, addresseeId);
         return ResponseEntity.ok().build();
     }

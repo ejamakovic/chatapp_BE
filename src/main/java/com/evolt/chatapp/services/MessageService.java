@@ -1,5 +1,6 @@
 package com.evolt.chatapp.services;
 
+import com.evolt.chatapp.repositories.ConversationMemberRepository;
 import com.evolt.chatapp.websocket.WebSocketEvent;
 import com.evolt.chatapp.models.*;
 import com.evolt.chatapp.models.dto.MessageDto;
@@ -10,6 +11,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -25,18 +27,22 @@ public class MessageService {
     private final AttachmentService attachmentService;
     private final ApplicationEventPublisher eventPublisher;
     private final ConversationRepository conversationRepository;
+    private final ConversationMemberRepository conversationMemberRepository;
 
     public MessageService(
             MessageRepository messageRepository,
             UserService userService,
             AttachmentService attachmentService,
             ApplicationEventPublisher eventPublisher,
-            ConversationRepository conversationRepository) {
+            ConversationRepository conversationRepository,
+            ConversationMemberRepository conversationMemberRepository
+            ) {
         this.messageRepository = messageRepository;
         this.userService = userService;
         this.attachmentService = attachmentService;
         this.eventPublisher = eventPublisher;
         this.conversationRepository = conversationRepository;
+        this.conversationMemberRepository = conversationMemberRepository;
     }
 
     public List<Message> getAllMessages() {
@@ -49,13 +55,17 @@ public class MessageService {
     }
 
     @Transactional
-    public MessageDto saveMessageDTO(
-            Long senderId,
-            Long conversationId,
-            String content,
-            String timestamp,
-            List<MultipartFile> files
-    ) {
+    public MessageDto saveMessageDTO(Long senderId, Long conversationId, String content,
+                                     String timestamp, List<MultipartFile> files) {
+
+        boolean isMember = conversationMemberRepository
+                .findConversationMembersByConversationId(conversationId)
+                .stream()
+                .anyMatch(username -> username.equals(userService.findById(senderId).getUsername()));
+        // cleaner: add a dedicated existsByConversationIdAndUserId query instead — see note below
+        if (!isMember) {
+            throw new AccessDeniedException("You are not a member of this conversation");
+        }
 
         User sender = userService.findById(senderId);
 
@@ -70,7 +80,14 @@ public class MessageService {
 
         Message savedMessage = messageRepository.save(message);
 
-        conversationRepository.updateLastMessage(conversation.get().getId(), message);
+        if (conversation.isPresent()) {
+            conversationRepository.updateLastMessage(conversation.get().getId(), message);
+        }
+        else {
+            throw new AccessDeniedException(
+                    "Conversation with id " + conversationId + " doesn't exist!"
+            );
+        }
 
         // Save all files (images/videos)
         if (files != null && !files.isEmpty()) {
