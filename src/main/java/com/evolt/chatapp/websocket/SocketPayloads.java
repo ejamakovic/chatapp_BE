@@ -3,6 +3,7 @@ package com.evolt.chatapp.websocket;
 import com.evolt.chatapp.models.Notification;
 import com.evolt.chatapp.models.dto.AttachmentDto;
 import com.evolt.chatapp.models.dto.MessageDto;
+import com.evolt.chatapp.models.dto.MessageReactionDto;
 import com.evolt.chatapp.models.dto.UserDto;
 
 import java.time.LocalDateTime;
@@ -58,15 +59,27 @@ public class SocketPayloads {
         }
     }
 
-    // TYPING EVENT RECORD
-    public record TypingPayload(
+    // REACTION EVENT RECORD
+    public record ReactionPayload(
             String type,
+            Long id,
+            Long messageId,
             Long conversationId,
             UserDto user,
-            boolean typing
+            String emoji,
+            LocalDateTime timestamp
     ) {
-        public TypingPayload(Long conversationId, UserDto user, boolean typing) {
-            this("typing", conversationId, user, typing);
+        public ReactionPayload(MessageReactionDto dto) {
+            this(
+                    "reaction_added",
+                    dto.getId(),
+                    dto.getMessageId(),
+                    dto.getConversationId(),
+                    dto.getUser(),
+                    dto.getEmoji(),
+                    dto.getTimestamp()
+            );
         }
     }
+
 }

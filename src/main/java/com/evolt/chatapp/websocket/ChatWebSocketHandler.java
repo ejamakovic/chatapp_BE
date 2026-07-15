@@ -80,17 +80,27 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
             }
             case "REACTION_ADDED" -> {
                 MessageReactionDto dto = (MessageReactionDto) event.getPayload();
-                Optional<Message> message = messageService.findMessageById(dto.getMessageId());
-                if (dto != null && message.isPresent()) {
-                    List<String> participants = conversationMemberService
-                            .getParticipants(message.get().getConversation().getId());
+                if (dto != null) {
+                    SocketPayloads.ReactionPayload payload = new SocketPayloads.ReactionPayload(dto);
+                    List<String> participants = conversationMemberService.getParticipants(dto.getConversationId());
                     for (String username : participants) {
-                        sendToUser(username, dto);
+                        sendToUser(username, payload);
                     }
                 }
             }
             case "REACTION_REMOVED" -> {
-                // payload is a Map here — same broadcast idea
+                @SuppressWarnings("unchecked")
+                Map<String, Object> payload = (Map<String, Object>) event.getPayload();
+                Object conversationIdRaw = payload.get("conversationId");
+                if (conversationIdRaw != null) {
+                    Long conversationId = (Long) conversationIdRaw;
+                    Map<String, Object> socketPayload = new java.util.HashMap<>(payload);
+                    socketPayload.put("type", "reaction_removed");
+                    List<String> participants = conversationMemberService.getParticipants(conversationId);
+                    for (String username : participants) {
+                        sendToUser(username, socketPayload);
+                    }
+                }
             }
             default -> logger.warn("Received unhandled WebSocket event type: {}", event.getEventType());
         }

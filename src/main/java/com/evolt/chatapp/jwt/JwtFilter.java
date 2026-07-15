@@ -23,7 +23,8 @@ public class JwtFilter extends OncePerRequestFilter {
             "/auth/register",
             "/auth/refresh",
             "/error",
-            "/ws"
+            "/ws",
+            "/uploads/avatars"
     );
 
     private final JwtService jwtService;

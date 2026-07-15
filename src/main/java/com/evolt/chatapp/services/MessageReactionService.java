@@ -63,10 +63,16 @@ public class MessageReactionService {
     public void removeReaction(Long messageId, Long userId, String emoji) {
         int deleted = reactionRepository.deleteByMessageIdAndUserIdAndEmoji(messageId, userId, emoji);
         if (deleted > 0) {
-            eventPublisher.publishEvent(new WebSocketEvent<>(
-                    "REACTION_REMOVED",
-                    Map.of("messageId", messageId, "userId", userId, "emoji", emoji)
-            ));
+            Message message = messageRepository.findById(messageId).orElse(null);
+            Long conversationId = message != null ? message.getConversation().getId() : null;
+
+            Map<String, Object> payload = new java.util.HashMap<>();
+            payload.put("messageId", messageId);
+            payload.put("userId", userId);
+            payload.put("emoji", emoji);
+            payload.put("conversationId", conversationId);
+
+            eventPublisher.publishEvent(new WebSocketEvent<>("REACTION_REMOVED", payload));
         }
     }
 
@@ -83,4 +89,6 @@ public class MessageReactionService {
                 .stream()
                 .collect(Collectors.groupingBy(MessageReaction::getEmoji, Collectors.counting()));
     }
+
+
 }
