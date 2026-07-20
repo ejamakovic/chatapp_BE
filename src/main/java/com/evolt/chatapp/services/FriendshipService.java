@@ -3,6 +3,7 @@ package com.evolt.chatapp.services;
 import com.evolt.chatapp.models.Friendship;
 import com.evolt.chatapp.models.Notification;
 import com.evolt.chatapp.models.User;
+import com.evolt.chatapp.models.dto.UserDto;
 import com.evolt.chatapp.models.enums.FriendshipStatus;
 import com.evolt.chatapp.models.enums.NotificationStatus;
 import com.evolt.chatapp.models.enums.NotificationType;
@@ -12,9 +13,16 @@ import com.evolt.chatapp.repositories.UserRepository;
 import com.evolt.chatapp.websocket.WebSocketEvent;
 import jakarta.transaction.Transactional;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
+
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 @Service
 public class FriendshipService {
@@ -53,6 +61,15 @@ public class FriendshipService {
         User addressee = userRepository.findById(addresseeId)
                 .orElseThrow(() -> new IllegalArgumentException("Addressee not found with ID: " + addresseeId));
 
+        Optional<Friendship> existing =
+                friendshipRepository.findFriendship(requesterId, addresseeId);
+
+        if (existing.isPresent()) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Friendship already exists.");
+        }
+
         Friendship friendship = new Friendship(requester, addressee, FriendshipStatus.PENDING);
         friendship.setCreatedAt(LocalDateTime.now());
 
@@ -90,6 +107,19 @@ public class FriendshipService {
 
         friendship.setStatus(newStatus);
         notificationRepository.closeFriendRequestNotification(id);
+    }
+
+    public Page<UserDto> getFriendsFromUser(Long id, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+
+        return friendshipRepository.findAllFriendsFromUser(id, pageable)
+                .map(friendship -> {
+                    User friend = friendship.getRequester().getId().equals(id)
+                            ? friendship.getAddressee()
+                            : friendship.getRequester();
+
+                    return new UserDto(friend);
+                });
     }
 
 }

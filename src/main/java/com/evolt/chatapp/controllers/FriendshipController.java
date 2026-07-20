@@ -1,7 +1,9 @@
 package com.evolt.chatapp.controllers;
 
+import com.evolt.chatapp.models.dto.UserDto;
 import com.evolt.chatapp.services.FriendshipService;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.*;
@@ -41,6 +43,15 @@ public class FriendshipController {
         Long requesterId = Long.parseLong(request.getAttribute("userId").toString());
         friendshipService.sendRequest(requesterId, addresseeId);
         return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/user/{id}")
+    public ResponseEntity<Page<UserDto>> getFriends(
+            @PathVariable Long id,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "100") int size) {
+
+        return ResponseEntity.ok(friendshipService.getFriendsFromUser(id, page, size));
     }
 
 }
