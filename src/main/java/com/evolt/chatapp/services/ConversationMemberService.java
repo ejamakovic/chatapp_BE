@@ -42,4 +42,8 @@ public class ConversationMemberService {
     public void updateLastSeenMessage(Long userId, Long conversationId, Long lastSeenMessageId) {
         conversationMemberRepository.updateLastSeenMessage(userId, conversationId, lastSeenMessageId);
     }
+
+    public Long getLastSeenMessageId(Long userId, Long conversationId) {
+        return conversationMemberRepository.findLastSeenMessageId(userId, conversationId);
+    }
 }

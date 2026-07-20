@@ -88,4 +88,14 @@ public class ConversationController {
         conversationMemberService.updateLastSeenMessage(userId, conversationId, lastSeenMessageId);
         return ResponseEntity.ok().build();
     }
+
+    @GetMapping("/{conversationId}/last-seen")
+    public ResponseEntity<Map<String, Long>> getLastSeen(
+            @PathVariable Long conversationId,
+            HttpServletRequest request
+    ) {
+        Long userId = Long.parseLong(request.getAttribute("userId").toString());
+        Long lastSeen = conversationMemberService.getLastSeenMessageId(userId, conversationId);
+        return ResponseEntity.ok(Map.of("lastSeenMessageId", lastSeen != null ? lastSeen : 0L));
+    }
 }

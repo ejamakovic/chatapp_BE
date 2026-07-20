@@ -36,4 +36,10 @@ public interface ConversationMemberRepository extends JpaRepository<Conversation
     WHERE cm.conversation.id = :conversationId AND cm.user.id = :userId
 """)
     boolean existsByConversationIdAndUserId(@Param("conversationId") Long conversationId, @Param("userId") Long userId);
+
+    @Query("""
+    SELECT cm.lastSeenMessageId FROM ConversationMember cm
+    WHERE cm.conversation.id = :conversationId AND cm.user.id = :userId
+""")
+    Long findLastSeenMessageId(@Param("userId") Long userId, @Param("conversationId") Long conversationId);
 }

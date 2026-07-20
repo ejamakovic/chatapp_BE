@@ -1,5 +1,6 @@
 package com.evolt.chatapp.services;
 
+import com.evolt.chatapp.models.dto.MessageWindowDto;
 import com.evolt.chatapp.repositories.ConversationMemberRepository;
 import com.evolt.chatapp.websocket.WebSocketEvent;
 import com.evolt.chatapp.models.*;
@@ -136,5 +137,37 @@ public class MessageService {
         return messageRepository.findMessagesFromConversation(conversationId, pageable);
     }
 
+    public MessageWindowDto getMessagesAroundLastSeen(Long conversationId, Long lastSeenMessageId, int before, int after) {
+        if (lastSeenMessageId == null || lastSeenMessageId <= 0) {
+            Page<Message> latest = messageRepository.findMessagesFromConversation(conversationId, PageRequest.of(0, before));
+            List<Message> ordered = new java.util.ArrayList<>(latest.getContent());
+            java.util.Collections.reverse(ordered);
+            List<MessageDto> dtos = ordered.stream().map(MessageDto::new).toList();
+            return new MessageWindowDto(dtos, latest.getContent().size() >= before, false, null);
+        }
+
+        Page<Message> olderPage = messageRepository.findMessagesUpToId(conversationId, lastSeenMessageId, PageRequest.of(0, before));
+        List<Message> older = new java.util.ArrayList<>(olderPage.getContent());
+        java.util.Collections.reverse(older);
+
+        Page<Message> newerPage = messageRepository.findMessagesAfterId(conversationId, lastSeenMessageId, PageRequest.of(0, after));
+
+        List<Message> combined = new java.util.ArrayList<>(older);
+        combined.addAll(newerPage.getContent());
+
+        List<MessageDto> dtos = combined.stream().map(MessageDto::new).toList();
+
+        boolean hasMoreOlder = olderPage.getContent().size() >= before;
+        boolean hasMoreNewer = newerPage.getContent().size() >= after;
+
+        return new MessageWindowDto(dtos, hasMoreOlder, hasMoreNewer, lastSeenMessageId);
+    }
+
+    public List<MessageDto> getMessagesBefore(Long conversationId, Long messageId, int size) {
+        Page<Message> page = messageRepository.findMessagesBeforeId(conversationId, messageId, PageRequest.of(0, size));
+        List<Message> ordered = new java.util.ArrayList<>(page.getContent());
+        java.util.Collections.reverse(ordered);
+        return ordered.stream().map(MessageDto::new).toList();
+    }
 
 }

@@ -2,6 +2,7 @@ package com.evolt.chatapp.controllers;
 
 import com.evolt.chatapp.models.Message;
 import com.evolt.chatapp.models.dto.MessageDto;
+import com.evolt.chatapp.models.dto.MessageWindowDto;
 import com.evolt.chatapp.models.mappers.MessageMapper;
 import com.evolt.chatapp.services.MessageService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -76,5 +77,24 @@ public class MessageController {
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
+    }
+
+    @GetMapping("/conversation/{id}/window")
+    public ResponseEntity<MessageWindowDto> getMessageWindow(
+            @PathVariable Long id,
+            @RequestParam(required = false) Long lastSeenMessageId,
+            @RequestParam(defaultValue = "30") int before,
+            @RequestParam(defaultValue = "30") int after
+    ) {
+        return ResponseEntity.ok(messageService.getMessagesAroundLastSeen(id, lastSeenMessageId, before, after));
+    }
+
+    @GetMapping("/conversation/{id}/before/{messageId}")
+    public ResponseEntity<List<MessageDto>> getMessagesBefore(
+            @PathVariable Long id,
+            @PathVariable Long messageId,
+            @RequestParam(defaultValue = "30") int size
+    ) {
+        return ResponseEntity.ok(messageService.getMessagesBefore(id, messageId, size));
     }
 }
