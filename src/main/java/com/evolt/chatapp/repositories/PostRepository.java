@@ -8,6 +8,9 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
+import java.util.List;
+
 @Repository
 public interface PostRepository extends JpaRepository<Post, Long> {
 
@@ -36,5 +39,22 @@ public interface PostRepository extends JpaRepository<Post, Long> {
             @Param("authorId") Long authorId,
             @Param("requesterId") Long requesterId,
             Pageable pageable
+    );
+
+    /** Candidate pool for the global feed — final ranking/pagination happens in PostService. */
+    @Query("""
+    SELECT p FROM Post p
+    WHERE p.createdAt >= :since
+    AND (
+        p.privacy = com.evolt.chatapp.models.enums.PostPrivacy.PUBLIC
+        OR p.author.id = :requesterId
+        OR (p.privacy = com.evolt.chatapp.models.enums.PostPrivacy.FRIENDS AND p.author.id IN :friendIds)
+    )
+    ORDER BY p.createdAt DESC
+""")
+    List<Post> findFeedCandidates(
+            @Param("requesterId") Long requesterId,
+            @Param("friendIds") List<Long> friendIds,
+            @Param("since") LocalDateTime since
     );
 }

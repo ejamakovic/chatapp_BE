@@ -1,10 +1,10 @@
 package com.evolt.chatapp.controllers;
 
-import com.evolt.chatapp.models.Post;
-import com.evolt.chatapp.models.dto.CommentRequest;
+import com.evolt.chatapp.models.PostAttachment;
 import com.evolt.chatapp.models.dto.PostCommentDto;
 import com.evolt.chatapp.models.dto.PostDto;
 import com.evolt.chatapp.models.dto.UpdatePostRequest;
+import com.evolt.chatapp.services.PostCommentService;
 import com.evolt.chatapp.services.PostService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.core.io.Resource;
@@ -22,16 +22,19 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/posts")
 public class PostController {
 
     private final PostService postService;
+    private final PostCommentService commentService;
     private final Path fileStorageLocation = Paths.get("uploads").toAbsolutePath().normalize();
 
-    public PostController(PostService postService) {
+    public PostController(PostService postService, PostCommentService commentService) {
         this.postService = postService;
+        this.commentService = commentService;
     }
 
     @GetMapping("/user/{userId}")
@@ -41,27 +44,28 @@ public class PostController {
             @RequestParam(defaultValue = "20") int size,
             HttpServletRequest request
     ) {
+        return ResponseEntity.ok(postService.getUserPosts(userId, currentUserId(request), page, size));
+    }
 
-        Long requesterId = currentUserId(request);
-
-        System.out.println("PROFILE USER: " + userId);
-        System.out.println("REQUESTER: " + requesterId);
-
-        return ResponseEntity.ok(
-                postService.getUserPosts(userId, requesterId, page, size)
-        );
+    /** Ranked, friends-first global feed. */
+    @GetMapping("/feed")
+    public ResponseEntity<Page<PostDto>> getFeed(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            HttpServletRequest request
+    ) {
+        return ResponseEntity.ok(postService.getFeed(currentUserId(request), page, size));
     }
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> createPost(
             @RequestParam String content,
             @RequestParam(defaultValue = "PUBLIC") String privacy,
-            @RequestParam(required = false) MultipartFile image,
+            @RequestParam(required = false) List<MultipartFile> media,
             HttpServletRequest request
     ) {
-        Long authorId = currentUserId(request);
         try {
-            PostDto dto = postService.createPost(authorId, content, privacy, image);
+            PostDto dto = postService.createPost(currentUserId(request), content, privacy, media);
             return ResponseEntity.status(HttpStatus.CREATED).body(dto);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
@@ -69,14 +73,9 @@ public class PostController {
     }
 
     @PatchMapping("/{id}")
-    public ResponseEntity<?> updatePost(
-            @PathVariable Long id,
-            @RequestBody UpdatePostRequest body,
-            HttpServletRequest request
-    ) {
-        Long requesterId = currentUserId(request);
+    public ResponseEntity<?> updatePost(@PathVariable Long id, @RequestBody UpdatePostRequest body, HttpServletRequest request) {
         try {
-            return ResponseEntity.ok(postService.updatePost(id, requesterId, body));
+            return ResponseEntity.ok(postService.updatePost(id, currentUserId(request), body));
         } catch (AccessDeniedException e) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
         } catch (IllegalArgumentException e) {
@@ -86,9 +85,8 @@ public class PostController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deletePost(@PathVariable Long id, HttpServletRequest request) {
-        Long requesterId = currentUserId(request);
         try {
-            postService.deletePost(id, requesterId);
+            postService.deletePost(id, currentUserId(request));
             return ResponseEntity.ok().build();
         } catch (AccessDeniedException e) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
@@ -97,35 +95,24 @@ public class PostController {
         }
     }
 
-    @GetMapping("/{id}/image")
-    public ResponseEntity<Resource> getPostImage(@PathVariable Long id, HttpServletRequest request) {
-        Long requesterId = currentUserId(request);
-
-        Post post;
+    @GetMapping("/{id}/media/{mediaId}")
+    public ResponseEntity<Resource> getPostMedia(@PathVariable Long id, @PathVariable Long mediaId, HttpServletRequest request) {
+        PostAttachment attachment;
         try {
-            post = postService.findByIdCheckingVisibility(id, requesterId);
+            attachment = postService.findMediaCheckingVisibility(id, mediaId, currentUserId(request));
         } catch (AccessDeniedException e) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         } catch (IllegalArgumentException e) {
             return ResponseEntity.notFound().build();
         }
 
-        if (post.getImageUrl() == null) {
-            return ResponseEntity.notFound().build();
-        }
-
         try {
-            Path filePath = fileStorageLocation.resolve(post.getImageUrl()).normalize();
+            Path filePath = fileStorageLocation.resolve(attachment.getFilePath()).normalize();
             Resource resource = new UrlResource(filePath.toUri());
+            if (!resource.exists()) return ResponseEntity.notFound().build();
 
-            if (!resource.exists()) {
-                return ResponseEntity.notFound().build();
-            }
-
-            String contentType = Files.probeContentType(filePath);
-            MediaType mediaType = contentType != null
-                    ? MediaType.parseMediaType(contentType)
-                    : MediaType.APPLICATION_OCTET_STREAM;
+            String contentType = attachment.getFileType() != null ? attachment.getFileType() : Files.probeContentType(filePath);
+            MediaType mediaType = contentType != null ? MediaType.parseMediaType(contentType) : MediaType.APPLICATION_OCTET_STREAM;
 
             return ResponseEntity.ok().contentType(mediaType).body(resource);
         } catch (IOException e) {
@@ -133,48 +120,42 @@ public class PostController {
         }
     }
 
-    @PostMapping("/{id}/like")
-    public ResponseEntity<?> likePost(@PathVariable Long id, HttpServletRequest request) {
-        Long userId = currentUserId(request);
-        try {
-            postService.likePost(id, userId);
-            return ResponseEntity.ok().build();
-        } catch (AccessDeniedException e) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
-    }
-
-    @DeleteMapping("/{id}/like")
-    public ResponseEntity<Void> unlikePost(@PathVariable Long id, HttpServletRequest request) {
-        Long userId = currentUserId(request);
-        postService.unlikePost(id, userId);
-        return ResponseEntity.ok().build();
-    }
+    // ── Comments ─────────────────────────────────────────────────────────────
 
     @GetMapping("/{id}/comments")
-    public ResponseEntity<?> getComments(@PathVariable Long id, HttpServletRequest request) {
+    public ResponseEntity<?> getComments(
+            @PathVariable Long id,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            HttpServletRequest request
+    ) {
         Long requesterId = currentUserId(request);
         try {
-            List<PostCommentDto> comments = postService.getComments(id, requesterId);
-            return ResponseEntity.ok(comments);
+            postService.findByIdCheckingVisibility(id, requesterId);
+            return ResponseEntity.ok(commentService.getTopLevelComments(id, requesterId, page, size));
         } catch (AccessDeniedException e) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
+    }
+
+    @GetMapping("/comments/{commentId}/replies")
+    public ResponseEntity<Page<PostCommentDto>> getReplies(
+            @PathVariable Long commentId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            HttpServletRequest request
+    ) {
+        return ResponseEntity.ok(commentService.getReplies(commentId, currentUserId(request), page, size));
     }
 
     @PostMapping("/{id}/comments")
-    public ResponseEntity<?> addComment(
-            @PathVariable Long id,
-            @RequestBody CommentRequest body,
-            HttpServletRequest request
-    ) {
-        Long authorId = currentUserId(request);
+    public ResponseEntity<?> addComment(@PathVariable Long id, @RequestBody Map<String, Object> body, HttpServletRequest request) {
+        String content = (String) body.get("content");
+        Long parentCommentId = body.get("parentCommentId") != null ? Long.valueOf(body.get("parentCommentId").toString()) : null;
         try {
-            PostCommentDto dto = postService.addComment(id, authorId, body.getContent());
+            PostCommentDto dto = commentService.addComment(id, currentUserId(request), content, parentCommentId);
             return ResponseEntity.status(HttpStatus.CREATED).body(dto);
         } catch (AccessDeniedException e) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
@@ -185,9 +166,8 @@ public class PostController {
 
     @DeleteMapping("/comments/{commentId}")
     public ResponseEntity<?> deleteComment(@PathVariable Long commentId, HttpServletRequest request) {
-        Long requesterId = currentUserId(request);
         try {
-            postService.deleteComment(commentId, requesterId);
+            commentService.deleteComment(commentId, currentUserId(request));
             return ResponseEntity.ok().build();
         } catch (AccessDeniedException e) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());

@@ -1,12 +1,10 @@
 package com.evolt.chatapp.websocket;
 
-import com.evolt.chatapp.models.Message;
 import com.evolt.chatapp.models.Notification;
 import com.evolt.chatapp.models.dto.MessageDto;
 import com.evolt.chatapp.models.dto.MessageReactionDto;
 import com.evolt.chatapp.models.enums.NotificationStatus;
 import com.evolt.chatapp.services.ConversationMemberService;
-import com.evolt.chatapp.services.MessageService;
 import com.evolt.chatapp.services.NotificationService;
 import com.evolt.chatapp.services.UserService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -24,7 +22,6 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Component
@@ -37,19 +34,17 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
     private final ConversationMemberService conversationMemberService;
     private final NotificationService notificationService;
     private final UserService userService;
-    private final MessageService messageService;
 
     public ChatWebSocketHandler(ObjectMapper objectMapper,
                                 ConversationMemberService conversationMemberService,
-                                NotificationService notificationService, UserService userService, MessageService messageService) {
+                                NotificationService notificationService, UserService userService) {
         this.objectMapper = objectMapper;
         this.conversationMemberService = conversationMemberService;
         this.notificationService = notificationService;
         this.userService = userService;
-        this.messageService = messageService;
     }
 
-    // --- CENTRALIZED EVENT ROUTER ---
+    // --- CENTRALIZED EVENT ROUTER --- 
     @Async
     @EventListener
     public void handleWebSocketEvents(WebSocketEvent<?> event) {

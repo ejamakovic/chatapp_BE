@@ -1,23 +1,16 @@
 package com.evolt.chatapp.services;
 
 import com.evolt.chatapp.models.Post;
-import com.evolt.chatapp.models.PostComment;
-import com.evolt.chatapp.models.PostLike;
+import com.evolt.chatapp.models.PostAttachment;
+import com.evolt.chatapp.models.PostReaction;
 import com.evolt.chatapp.models.User;
-import com.evolt.chatapp.models.dto.PostCommentDto;
+import com.evolt.chatapp.models.dto.PostAttachmentDto;
 import com.evolt.chatapp.models.dto.PostDto;
 import com.evolt.chatapp.models.dto.UpdatePostRequest;
 import com.evolt.chatapp.models.enums.PostPrivacy;
-import com.evolt.chatapp.repositories.FriendshipRepository;
-import com.evolt.chatapp.repositories.PostCommentRepository;
-import com.evolt.chatapp.repositories.PostLikeRepository;
-import com.evolt.chatapp.repositories.PostRepository;
-import com.evolt.chatapp.repositories.UserRepository;
+import com.evolt.chatapp.repositories.*;
 import jakarta.transaction.Transactional;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.*;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -27,27 +20,31 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.util.List;
-import java.util.UUID;
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class PostService {
 
     private final PostRepository postRepository;
-    private final PostLikeRepository postLikeRepository;
+    private final PostAttachmentRepository postAttachmentRepository;
+    private final PostReactionRepository postReactionRepository;
     private final PostCommentRepository postCommentRepository;
     private final UserRepository userRepository;
     private final FriendshipRepository friendshipRepository;
 
     public PostService(
             PostRepository postRepository,
-            PostLikeRepository postLikeRepository,
+            PostAttachmentRepository postAttachmentRepository,
+            PostReactionRepository postReactionRepository,
             PostCommentRepository postCommentRepository,
             UserRepository userRepository,
             FriendshipRepository friendshipRepository
     ) {
         this.postRepository = postRepository;
-        this.postLikeRepository = postLikeRepository;
+        this.postAttachmentRepository = postAttachmentRepository;
+        this.postReactionRepository = postReactionRepository;
         this.postCommentRepository = postCommentRepository;
         this.userRepository = userRepository;
         this.friendshipRepository = friendshipRepository;
@@ -56,7 +53,7 @@ public class PostService {
     // ── Create ───────────────────────────────────────────────────────────────
 
     @Transactional
-    public PostDto createPost(Long authorId, String content, String privacyRaw, MultipartFile image) {
+    public PostDto createPost(Long authorId, String content, String privacyRaw, List<MultipartFile> media) {
         if (content == null || content.isBlank()) {
             throw new IllegalArgumentException("Post content cannot be empty");
         }
@@ -68,34 +65,37 @@ public class PostService {
         post.setAuthor(author);
         post.setContent(content.trim());
         post.setPrivacy(parsePrivacy(privacyRaw));
+        Post saved = postRepository.save(post);
 
-        if (image != null && !image.isEmpty()) {
-            post.setImageUrl(storeImage(image));
+        if (media != null) {
+            int order = 0;
+            for (MultipartFile file : media) {
+                if (file == null || file.isEmpty()) continue;
+                String path = storeMedia(file);
+                PostAttachment attachment = new PostAttachment(saved, path, file.getContentType(), order++);
+                postAttachmentRepository.save(attachment);
+                saved.getMedia().add(attachment);
+            }
         }
 
-        Post saved = postRepository.save(post);
-        return toDto(saved, authorId);
+        return toDto(saved, authorId, requesterFriendIds(authorId));
     }
 
-    private String storeImage(MultipartFile file) {
+    private String storeMedia(MultipartFile file) {
         String contentType = file.getContentType();
-        if (contentType == null || !contentType.startsWith("image/")) {
-            throw new IllegalArgumentException("Post image must be an image file");
+        if (contentType == null || !(contentType.startsWith("image/") || contentType.startsWith("video/"))) {
+            throw new IllegalArgumentException("Post media must be an image or video file");
         }
-
         try {
             Path uploadDir = Paths.get("uploads", "posts");
-            if (!Files.exists(uploadDir)) {
-                Files.createDirectories(uploadDir);
-            }
+            if (!Files.exists(uploadDir)) Files.createDirectories(uploadDir);
 
             String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
             Path dest = uploadDir.resolve(fileName);
             Files.copy(file.getInputStream(), dest, StandardCopyOption.REPLACE_EXISTING);
-
             return "posts/" + fileName;
         } catch (IOException e) {
-            throw new RuntimeException("Failed to store post image", e);
+            throw new RuntimeException("Failed to store post media", e);
         }
     }
 
@@ -113,17 +113,57 @@ public class PostService {
     public Page<PostDto> getUserPosts(Long profileUserId, Long requesterId, int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
         Page<Post> posts = postRepository.findVisiblePostsByAuthor(profileUserId, requesterId, pageable);
-        return posts.map(p -> toDto(p, requesterId));
+        Set<Long> friendIds = requesterFriendIds(requesterId);
+        return posts.map(p -> toDto(p, requesterId, friendIds));
+    }
+
+    /**
+     * Global feed: candidate posts from the last 30 days visible to the requester
+     * (public + own + friends' FRIENDS-only posts), ranked "hot" and friends-boosted.
+     * See RankingUtil.postScore.
+     */
+    public Page<PostDto> getFeed(Long requesterId, int page, int size) {
+        List<Long> friendIdList = friendshipRepository.findFriendIds(requesterId);
+        Set<Long> friendIds = new HashSet<>(friendIdList);
+
+        LocalDateTime since = LocalDateTime.now().minusDays(30);
+        List<Post> candidates = postRepository.findFeedCandidates(
+                requesterId, friendIdList.isEmpty() ? List.of(-1L) : friendIdList, since);
+
+        if (candidates.isEmpty()) {
+            return new PageImpl<>(List.of(), PageRequest.of(page, size), 0);
+        }
+
+        List<Long> postIds = candidates.stream().map(Post::getId).toList();
+        Map<Long, Long> reactionCounts = postReactionRepository.findByPostIdIn(postIds).stream()
+                .collect(Collectors.groupingBy(r -> r.getPost().getId(), Collectors.counting()));
+
+        List<Post> sorted = candidates.stream()
+                .sorted((a, b) -> Double.compare(
+                        RankingUtil.postScore(reactionCounts.getOrDefault(b.getId(), 0L), postCommentRepository.countByPostId(b.getId()), b.getCreatedAt(), friendIds.contains(b.getAuthor().getId())),
+                        RankingUtil.postScore(reactionCounts.getOrDefault(a.getId(), 0L), postCommentRepository.countByPostId(a.getId()), a.getCreatedAt(), friendIds.contains(a.getAuthor().getId()))
+                ))
+                .toList();
+
+        List<Post> pageContent = RankingUtil.paginate(sorted, page, size);
+        List<PostDto> dtos = pageContent.stream().map(p -> toDto(p, requesterId, friendIds)).toList();
+
+        return new PageImpl<>(dtos, PageRequest.of(page, size), sorted.size());
     }
 
     public Post findByIdCheckingVisibility(Long postId, Long requesterId) {
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new IllegalArgumentException("Post not found"));
-
         if (!isVisible(post, requesterId)) {
             throw new AccessDeniedException("You cannot view this post");
         }
         return post;
+    }
+
+    public PostAttachment findMediaCheckingVisibility(Long postId, Long mediaId, Long requesterId) {
+        findByIdCheckingVisibility(postId, requesterId);
+        return postAttachmentRepository.findByIdAndPostId(mediaId, postId)
+                .orElseThrow(() -> new IllegalArgumentException("Media not found"));
     }
 
     private boolean isVisible(Post post, Long requesterId) {
@@ -145,126 +185,48 @@ public class PostService {
         }
 
         if (body.getContent() != null) {
-            if (body.getContent().isBlank()) {
-                throw new IllegalArgumentException("Content cannot be empty");
-            }
+            if (body.getContent().isBlank()) throw new IllegalArgumentException("Content cannot be empty");
             post.setContent(body.getContent().trim());
         }
+        if (body.getPrivacy() != null) post.setPrivacy(parsePrivacy(body.getPrivacy()));
 
-        if (body.getPrivacy() != null) {
-            post.setPrivacy(parsePrivacy(body.getPrivacy()));
-        }
-
-        return toDto(postRepository.save(post), requesterId);
+        return toDto(postRepository.save(post), requesterId, requesterFriendIds(requesterId));
     }
 
     @Transactional
     public void deletePost(Long postId, Long requesterId) {
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new IllegalArgumentException("Post not found"));
-
         if (!post.getAuthor().getId().equals(requesterId)) {
             throw new AccessDeniedException("You can only delete your own posts");
         }
-
         postRepository.delete(post);
-    }
-
-    // ── Likes ────────────────────────────────────────────────────────────────
-
-    @Transactional
-    public void likePost(Long postId, Long userId) {
-        Post post = findByIdCheckingVisibility(postId, userId);
-
-        if (postLikeRepository.existsByPostIdAndUserId(post.getId(), userId)) {
-            return; // already liked — idempotent
-        }
-
-        User user = userRepository.getReferenceById(userId);
-        PostLike like = new PostLike();
-        like.setPost(post);
-        like.setUser(user);
-        postLikeRepository.save(like);
-    }
-
-    @Transactional
-    public void unlikePost(Long postId, Long userId) {
-        postLikeRepository.deleteByPostIdAndUserId(postId, userId);
-    }
-
-    // ── Comments ─────────────────────────────────────────────────────────────
-
-    public List<PostCommentDto> getComments(Long postId, Long requesterId) {
-        Post post = findByIdCheckingVisibility(postId, requesterId);
-        return postCommentRepository.findByPostIdOrderByCreatedAtAsc(post.getId())
-                .stream()
-                .map(this::toCommentDto)
-                .toList();
-    }
-
-    @Transactional
-    public PostCommentDto addComment(Long postId, Long authorId, String content) {
-        if (content == null || content.isBlank()) {
-            throw new IllegalArgumentException("Comment cannot be empty");
-        }
-
-        Post post = findByIdCheckingVisibility(postId, authorId);
-        User author = userRepository.findById(authorId)
-                .orElseThrow(() -> new IllegalArgumentException("Author not found"));
-
-        PostComment comment = new PostComment();
-        comment.setPost(post);
-        comment.setAuthor(author);
-        comment.setContent(content.trim());
-
-        return toCommentDto(postCommentRepository.save(comment));
-    }
-
-    @Transactional
-    public void deleteComment(Long commentId, Long requesterId) {
-        PostComment comment = postCommentRepository.findById(commentId)
-                .orElseThrow(() -> new IllegalArgumentException("Comment not found"));
-
-        boolean isCommentAuthor = comment.getAuthor().getId().equals(requesterId);
-        boolean isPostAuthor = comment.getPost().getAuthor().getId().equals(requesterId);
-
-        if (!isCommentAuthor && !isPostAuthor) {
-            throw new AccessDeniedException("You cannot delete this comment");
-        }
-
-        postCommentRepository.delete(comment);
     }
 
     // ── Mapping ──────────────────────────────────────────────────────────────
 
-    private PostDto toDto(Post post, Long requesterId) {
-        long likeCount = postLikeRepository.countByPostId(post.getId());
-        long commentCount = postCommentRepository.countByPostId(post.getId());
-        boolean likedByMe = postLikeRepository.existsByPostIdAndUserId(post.getId(), requesterId);
-        String publicImageUrl = post.getImageUrl() != null ? "/posts/" + post.getId() + "/image" : null;
-
-        return new PostDto(
-                post.getId(),
-                post.getAuthor().getId(),
-                post.getAuthor().getUsername(),
-                post.getContent(),
-                publicImageUrl,
-                post.getPrivacy().name(),
-                post.getCreatedAt(),
-                likeCount,
-                commentCount,
-                likedByMe
-        );
+    private Set<Long> requesterFriendIds(Long requesterId) {
+        return new HashSet<>(friendshipRepository.findFriendIds(requesterId));
     }
 
-    private PostCommentDto toCommentDto(PostComment comment) {
-        return new PostCommentDto(
-                comment.getId(),
-                comment.getPost().getId(),
-                comment.getAuthor().getId(),
-                comment.getAuthor().getUsername(),
-                comment.getContent(),
-                comment.getCreatedAt()
+    private PostDto toDto(Post post, Long requesterId, Set<Long> friendIds) {
+        long commentCount = postCommentRepository.countByPostId(post.getId());
+        List<PostReaction> reactions = postReactionRepository.findByPostId(post.getId());
+
+        Map<String, Long> reactionCounts = reactions.stream()
+                .collect(Collectors.groupingBy(PostReaction::getEmoji, Collectors.counting()));
+        String myReaction = reactions.stream()
+                .filter(r -> r.getUser().getId().equals(requesterId))
+                .map(PostReaction::getEmoji).findFirst().orElse(null);
+
+        List<PostAttachmentDto> media = post.getMedia().stream()
+                .map(a -> new PostAttachmentDto(post.getId(), a)).toList();
+
+        return new PostDto(
+                post.getId(), post.getAuthor().getId(), post.getAuthor().getUsername(), post.getAuthor().getAvatarUrl(),
+                post.getContent(), media, post.getPrivacy().name(), post.getCreatedAt(),
+                commentCount, reactionCounts, reactions.size(), myReaction,
+                friendIds.contains(post.getAuthor().getId())
         );
     }
 }

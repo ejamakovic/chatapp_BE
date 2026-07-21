@@ -1,5 +1,3 @@
-Here's the full breakdown of what to change and why.
-
 Changes to existing models
 Message — the most work needed here. Add replyToMessage as a self-referential FK (threaded replies). Add isDeleted + deletedAt for soft deletes so "This message was deleted" still shows instead of breaking the thread. Add editedAt + originalContent so you can show the edit history. Add a messageType enum (TEXT, IMAGE, FILE, AUDIO, CALL_LOG) so the UI knows how to render it without inspecting attachments.
 Add isArchived so users can hide conversations without deleting them.
@@ -7,10 +5,11 @@ Add description for group chats. pinnedMessage can be a FK or a separate Message
 ConversationMember — add isMuted + mutedUntil (null = permanent mute). Add isPinned so users can pin a conversation to the top of their list. Add nickname for per-chat aliases (common in WhatsApp-style apps). Add notificationPreference enum (ALL, MENTIONS, NONE).
 
 New models you need
-MessageReaction — emoji reactions. Fields: message, user, emoji (store the emoji character directly), createdAt. Add a unique constraint on (message, user, emoji) so one person can't react with the same emoji twice.
 UserStatus — online presence. One row per user (user FK is unique). Store presence enum, lastActiveAt, and an optional custom statusText/statusEmoji. Update this via a scheduled job or WebSocket disconnect event.
-Attachment (you likely have this but extend it) — add mimeType, fileSize, thumbnailUrl, and duration (milliseconds, for audio/video). Without mimeType you can't render the right preview component on the frontend.
 
 Nice-to-have new models
 ReadReceipt — a separate table of (message, user, readAt) gives you per-user per-message read status (like WhatsApp's double blue tick). Your current lastSeenMessageId on ConversationMember is a cheaper approximation — use the separate table only when you actually want to show who specifically read each message.
 MessagePin — if you want multiple pinned messages per conversation (Slack/Telegram style), promote the pinnedMessage FK on Conversation into its own table with pinnedBy and pinnedAt.
+
+ADVICE:
+The one thing worth a second pass later if you want it: right now feed ranking recomputes scores in Java over a 30-day candidate window on every request — fine at this scale, but if the app grows you'd want to cache/precompute a rank column instead of live-scoring.

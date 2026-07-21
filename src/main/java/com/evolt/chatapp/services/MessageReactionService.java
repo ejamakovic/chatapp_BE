@@ -13,8 +13,8 @@ import jakarta.transaction.Transactional;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.Map;
+import java.time.LocalDateTime;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -36,59 +36,60 @@ public class MessageReactionService {
         this.eventPublisher = eventPublisher;
     }
 
+    /**
+     * A user has at most one reaction per message.
+     * - No existing reaction  -> create it.
+     * - Same emoji as before  -> remove it (toggle off).
+     * - Different emoji       -> overwrite it.
+     * Returns the new reaction dto, or null if it was removed.
+     */
     @Transactional
-    public MessageReactionDto addReaction(Long messageId, Long userId, String emoji) {
+    public MessageReactionDto setReaction(Long messageId, Long userId, String emoji) {
         if (!AllowedReactions.isAllowed(emoji)) {
             throw new IllegalArgumentException("Unsupported reaction emoji");
         }
 
-        // Idempotent: same user + same emoji + same message is a no-op, not an error
-        if (reactionRepository.existsByMessageIdAndUserIdAndEmoji(messageId, userId, emoji)) {
-            return null;
-        }
-
         Message message = messageRepository.findById(messageId)
                 .orElseThrow(() -> new IllegalArgumentException("Message not found"));
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        Long conversationId = message.getConversation().getId();
 
-        MessageReaction saved = reactionRepository.save(new MessageReaction(message, user, emoji));
-        MessageReactionDto dto = new MessageReactionDto(saved);
+        Optional<MessageReaction> existing = reactionRepository.findByMessageIdAndUserId(messageId, userId);
 
-        eventPublisher.publishEvent(new WebSocketEvent<>("REACTION_ADDED", dto));
-        return dto;
-    }
+        if (existing.isPresent() && existing.get().getEmoji().equals(emoji)) {
+            reactionRepository.delete(existing.get());
 
-    @Transactional
-    public void removeReaction(Long messageId, Long userId, String emoji) {
-        int deleted = reactionRepository.deleteByMessageIdAndUserIdAndEmoji(messageId, userId, emoji);
-        if (deleted > 0) {
-            Message message = messageRepository.findById(messageId).orElse(null);
-            Long conversationId = message != null ? message.getConversation().getId() : null;
-
-            Map<String, Object> payload = new java.util.HashMap<>();
+            Map<String, Object> payload = new HashMap<>();
             payload.put("messageId", messageId);
             payload.put("userId", userId);
             payload.put("emoji", emoji);
             payload.put("conversationId", conversationId);
-
             eventPublisher.publishEvent(new WebSocketEvent<>("REACTION_REMOVED", payload));
+            return null;
         }
+
+        MessageReaction reaction = existing.orElseGet(() -> {
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new IllegalArgumentException("User not found"));
+            return new MessageReaction(message, user, emoji);
+        });
+        reaction.setEmoji(emoji);
+        reaction.setCreatedAt(LocalDateTime.now());
+
+        MessageReaction saved = reactionRepository.save(reaction);
+        MessageReactionDto dto = new MessageReactionDto(saved);
+
+        // Also represents "replace" — the frontend clears this user's previous
+        // reaction on this message before applying the new one.
+        eventPublisher.publishEvent(new WebSocketEvent<>("REACTION_ADDED", dto));
+        return dto;
     }
 
     public List<MessageReactionDto> getReactionsForMessage(Long messageId) {
-        return reactionRepository.findByMessageId(messageId)
-                .stream()
-                .map(MessageReactionDto::new)
-                .toList();
+        return reactionRepository.findByMessageId(messageId).stream().map(MessageReactionDto::new).toList();
     }
 
-    /** Grouped view: emoji -> count, handy for rendering pill badges under a message. */
     public Map<String, Long> getReactionCounts(Long messageId) {
-        return reactionRepository.findByMessageId(messageId)
-                .stream()
+        return reactionRepository.findByMessageId(messageId).stream()
                 .collect(Collectors.groupingBy(MessageReaction::getEmoji, Collectors.counting()));
     }
-
-
 }

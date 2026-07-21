@@ -25,35 +25,17 @@ public class MessageReactionController {
         return ResponseEntity.ok(reactionService.getReactionsForMessage(messageId));
     }
 
+    /** Same emoji again removes it; a different emoji overwrites it. Returns null when removed. */
     @PostMapping
-    public ResponseEntity<?> addReaction(
-            @PathVariable Long messageId,
-            @RequestBody Map<String, String> body,
-            HttpServletRequest request
-    ) {
+    public ResponseEntity<?> setReaction(@PathVariable Long messageId, @RequestBody Map<String, String> body, HttpServletRequest request) {
         Long userId = Long.parseLong(request.getAttribute("userId").toString());
-        String emoji = body.get("emoji");
-
         try {
-            MessageReactionDto dto = reactionService.addReaction(messageId, userId, emoji);
-            return ResponseEntity.ok(dto); // dto may be null if already reacted — still 200, idempotent
+            return ResponseEntity.ok(reactionService.setReaction(messageId, userId, body.get("emoji")));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 
-    @DeleteMapping
-    public ResponseEntity<Void> removeReaction(
-            @PathVariable Long messageId,
-            @RequestParam String emoji,
-            HttpServletRequest request
-    ) {
-        Long userId = Long.parseLong(request.getAttribute("userId").toString());
-        reactionService.removeReaction(messageId, userId, emoji);
-        return ResponseEntity.ok().build();
-    }
-
-    /** Lets the frontend fetch the allowed emoji set instead of hardcoding it twice. */
     @GetMapping("/available")
     public ResponseEntity<?> getAvailableEmojis() {
         return ResponseEntity.ok(AllowedReactions.EMOJIS);

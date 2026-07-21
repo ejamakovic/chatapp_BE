@@ -1,7 +1,6 @@
 package com.evolt.chatapp.repositories;
 
 import com.evolt.chatapp.models.Friendship;
-import com.evolt.chatapp.models.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -9,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -40,4 +40,12 @@ public interface FriendshipRepository extends JpaRepository<Friendship, Long> {
       AND (f.requester.id = :addresseeId OR f.addressee.id = :addresseeId)
 """)
     Optional<Friendship> findFriendship(Long requesterId, Long addresseeId);
+
+    @Query("""
+        SELECT CASE WHEN f.requester.id = :userId THEN f.addressee.id ELSE f.requester.id END
+        FROM Friendship f
+        WHERE f.status = com.evolt.chatapp.models.enums.FriendshipStatus.ACCEPTED
+        AND (f.requester.id = :userId OR f.addressee.id = :userId)
+    """)
+    List<Long> findFriendIds(@Param("userId") Long userId);
 }

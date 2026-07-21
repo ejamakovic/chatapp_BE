@@ -28,10 +28,6 @@ public class Post {
     @Column(columnDefinition = "TEXT", nullable = false)
     private String content;
 
-    /** Relative path on disk (e.g. "posts/uuid.jpg"). Never exposed directly — served via /posts/{id}/image. */
-    @Column(name = "image_path")
-    private String imageUrl;
-
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private PostPrivacy privacy = PostPrivacy.PUBLIC;
@@ -40,34 +36,31 @@ public class Post {
     private LocalDateTime createdAt = LocalDateTime.now();
 
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("orderIndex ASC")
+    private List<PostAttachment> media = new ArrayList<>();
+
+    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PostComment> comments = new ArrayList<>();
 
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<PostLike> likes = new ArrayList<>();
+    private List<PostReaction> reactions = new ArrayList<>();
 
     public Post() {}
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
-
     public User getAuthor() { return author; }
     public void setAuthor(User author) { this.author = author; }
-
     public String getContent() { return content; }
     public void setContent(String content) { this.content = content; }
-
-    public String getImageUrl() { return imageUrl; }
-    public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
-
     public PostPrivacy getPrivacy() { return privacy; }
     public void setPrivacy(PostPrivacy privacy) { this.privacy = privacy; }
-
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
-
+    public List<PostAttachment> getMedia() { return media; }
+    public void setMedia(List<PostAttachment> media) { this.media = media; }
     public List<PostComment> getComments() { return comments; }
     public void setComments(List<PostComment> comments) { this.comments = comments; }
-
-    public List<PostLike> getLikes() { return likes; }
-    public void setLikes(List<PostLike> likes) { this.likes = likes; }
+    public List<PostReaction> getReactions() { return reactions; }
+    public void setReactions(List<PostReaction> reactions) { this.reactions = reactions; }
 }
