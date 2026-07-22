@@ -44,6 +44,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/auth/login", "/auth/register", "/auth/refresh").permitAll()
                         .requestMatchers("/uploads/avatars/**").permitAll()
+                        .requestMatchers("/uploads/groups/**").permitAll()
                         .requestMatchers("/ws/**").permitAll()
                         .requestMatchers(HttpMethod.DELETE, "/messages/**").hasRole("ADMIN")
                         .anyRequest().authenticated()

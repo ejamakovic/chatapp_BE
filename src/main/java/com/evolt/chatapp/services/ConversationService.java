@@ -4,6 +4,7 @@ import com.evolt.chatapp.models.Conversation;
 import com.evolt.chatapp.models.ConversationMember;
 import com.evolt.chatapp.models.User;
 import com.evolt.chatapp.models.dto.ConversationListDto;
+import com.evolt.chatapp.models.dto.UserDto;
 import com.evolt.chatapp.models.enums.ConversationRole;
 import com.evolt.chatapp.models.enums.ConversationType;
 import com.evolt.chatapp.repositories.ConversationMemberRepository;
@@ -13,12 +14,17 @@ import jakarta.transaction.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class ConversationService {
@@ -127,5 +133,61 @@ public class ConversationService {
         }
 
         return conversation;
+    }
+
+    @Transactional
+    public Conversation updateGroupDetails(Long conversationId, Long requesterId, String name, String imageUrl) {
+        Conversation conversation = conversationRepository.findById(conversationId)
+                .orElseThrow(() -> new IllegalArgumentException("Conversation not found"));
+
+        if (conversation.getType() != ConversationType.GROUP) {
+            throw new IllegalArgumentException("Only group conversations can be edited");
+        }
+
+        ConversationMember requester = conversationMemberRepository
+                .findByConversationIdAndUserId(conversationId, requesterId)
+                .orElseThrow(() -> new AccessDeniedException("You are not a member"));
+        if (requester.getRole() == ConversationRole.MEMBER) {
+            throw new AccessDeniedException("Only admins/owner can edit group details");
+        }
+
+        if (name != null && !name.isBlank()) conversation.setName(name.trim());
+        if (imageUrl != null) conversation.setImageUrl(imageUrl);
+
+        return conversationRepository.save(conversation);
+    }
+
+    @Transactional
+    public String updateGroupImage(Long conversationId, Long requesterId, MultipartFile file) throws IOException {
+
+        ConversationMember requester = conversationMemberRepository
+                .findByConversationIdAndUserId(conversationId, requesterId)
+                .orElseThrow(() -> new AccessDeniedException("You are not a member"));
+        if (requester.getRole() == ConversationRole.MEMBER) {
+            throw new AccessDeniedException("Only admins/owner can edit group details");
+        }
+
+        String contentType = file.getContentType();
+        if (contentType == null || !contentType.startsWith("image/")) {
+            throw new IllegalArgumentException("Group image must be an image file");
+        }
+
+        Path uploadDir = Paths.get("uploads", "groups");
+        if (!Files.exists(uploadDir)) Files.createDirectories(uploadDir);
+        String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
+        Files.copy(file.getInputStream(), uploadDir.resolve(fileName), StandardCopyOption.REPLACE_EXISTING);
+        String url = "/uploads/groups/" + fileName;
+
+        Conversation conversation = updateGroupDetails(conversationId, requesterId, null, url);
+        return url;
+    }
+
+    public List<UserDto> getUsersNotInConversation(Long conversationId) {
+        Set<Long> memberIds = conversationMemberRepository.findAllWithUserByConversationId(conversationId)
+                .stream().map(cm -> cm.getUser().getId()).collect(Collectors.toSet());
+        return userRepository.findAll().stream()
+                .filter(u -> !memberIds.contains(u.getId()))
+                .map(UserDto::new)
+                .toList();
     }
 }

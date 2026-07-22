@@ -8,6 +8,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface ConversationMemberRepository extends JpaRepository<ConversationMember, Long> {
@@ -42,4 +43,18 @@ public interface ConversationMemberRepository extends JpaRepository<Conversation
     WHERE cm.conversation.id = :conversationId AND cm.user.id = :userId
 """)
     Long findLastSeenMessageId(@Param("userId") Long userId, @Param("conversationId") Long conversationId);
+
+    @Query("""
+    SELECT cm FROM ConversationMember cm
+    JOIN FETCH cm.user
+    WHERE cm.conversation.id = :conversationId
+    ORDER BY cm.role ASC, cm.joinedAt ASC
+""")
+    List<ConversationMember> findAllWithUserByConversationId(@Param("conversationId") Long conversationId);
+
+    Optional<ConversationMember> findByConversationIdAndUserId(Long conversationId, Long userId);
+
+    @Modifying
+    @Query("DELETE FROM ConversationMember cm WHERE cm.conversation.id = :conversationId AND cm.user.id = :userId")
+    void deleteByConversationIdAndUserId(@Param("conversationId") Long conversationId, @Param("userId") Long userId);
 }

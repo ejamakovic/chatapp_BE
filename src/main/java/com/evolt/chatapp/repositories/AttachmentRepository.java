@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -19,4 +20,12 @@ public interface AttachmentRepository extends JpaRepository<Attachment, Long> {
             "WHERE a.id = :attachmentId AND member.user.id = :userId")
     Optional<Attachment> findByIdAndUserId(@Param("attachmentId") Long attachmentId,
                                            @Param("userId") Long userId);
+
+    @Query("""
+        SELECT a FROM Attachment a
+        JOIN a.message m
+        WHERE m.conversation.id = :conversationId
+        ORDER BY m.timestamp DESC
+    """)
+    List<Attachment> findByConversationId(@Param("conversationId") Long conversationId);
 }

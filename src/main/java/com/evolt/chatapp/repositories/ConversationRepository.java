@@ -24,16 +24,10 @@ public interface ConversationRepository extends JpaRepository<Conversation, Long
 
     @Query("""
     SELECT new com.evolt.chatapp.models.dto.ConversationListDto(
-        c.id,
-        c.name,
-        c.imageUrl,
-        m.content,
-        s.username,
-        m.timestamp,
-        (SELECT COUNT(msg) FROM Message msg 
-         WHERE msg.conversation = c 
-           AND msg.id > cm.lastSeenMessageId 
-           AND msg.sender.id <> :userId)
+        c.id, c.name, c.imageUrl, m.content, s.username, m.timestamp,
+        (SELECT COUNT(msg) FROM Message msg WHERE msg.conversation = c AND msg.id > cm.lastSeenMessageId AND msg.sender.id <> :userId),
+        (SELECT MIN(other.user.id) FROM ConversationMember other WHERE other.conversation = c AND other.user.id <> :userId),
+        (SELECT MIN(other.user.avatarUrl) FROM ConversationMember other WHERE other.conversation = c AND other.user.id <> :userId)
     )
     FROM ConversationMember cm
     JOIN cm.conversation c

@@ -1,9 +1,12 @@
 package com.evolt.chatapp.controllers;
 
 import com.evolt.chatapp.models.Message;
+import com.evolt.chatapp.models.dto.AttachmentDto;
 import com.evolt.chatapp.models.dto.MessageDto;
 import com.evolt.chatapp.models.dto.MessageWindowDto;
 import com.evolt.chatapp.models.mappers.MessageMapper;
+import com.evolt.chatapp.repositories.AttachmentRepository;
+import com.evolt.chatapp.services.AttachmentService;
 import com.evolt.chatapp.services.MessageService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
@@ -23,9 +26,13 @@ public class MessageController {
 
     private final MessageService messageService;
     private static final Logger logger = LoggerFactory.getLogger(MessageController.class);
+    private final AttachmentRepository attachmentRepository;
+    private final AttachmentService attachmentService;
 
-    public MessageController(MessageService messageService) {
+    public MessageController(MessageService messageService, AttachmentRepository attachmentRepository, AttachmentService attachmentService) {
         this.messageService = messageService;
+        this.attachmentRepository = attachmentRepository;
+        this.attachmentService = attachmentService;
     }
 
     @GetMapping
@@ -96,5 +103,13 @@ public class MessageController {
             @RequestParam(defaultValue = "30") int size
     ) {
         return ResponseEntity.ok(messageService.getMessagesBefore(id, messageId, size));
+    }
+
+    @GetMapping("/conversation/{id}/media")
+    public ResponseEntity<List<AttachmentDto>> getConversationMedia(@PathVariable Long id, HttpServletRequest request) {
+        // reuse membership check pattern from your other endpoints
+        List<AttachmentDto> media = attachmentService.findByConversationId(id)
+                .stream().map(AttachmentDto::new).toList();
+        return ResponseEntity.ok(media);
     }
 }

@@ -10,6 +10,8 @@ public class ConversationListDto {
     private String senderUsername;
     private LocalDateTime timestamp;
     private Long unreadCount;
+    private Long otherUserId;
+    private String otherUserAvatarUrl;
 
     public ConversationListDto() {
     }
@@ -21,7 +23,9 @@ public class ConversationListDto {
             String lastMessage,
             String senderUsername,
             LocalDateTime timestamp,
-            Long unreadCount
+            Long unreadCount,
+            Long otherUserId,
+            String otherUserAvatarUrl
     ) {
         this.id = id;
         this.name = name;
@@ -30,6 +34,8 @@ public class ConversationListDto {
         this.senderUsername = senderUsername;
         this.unreadCount = unreadCount;
         this.timestamp = timestamp;
+        this.otherUserId = otherUserId;
+        this.otherUserAvatarUrl = otherUserAvatarUrl;
     }
 
 
@@ -90,4 +96,19 @@ public class ConversationListDto {
         this.imageUrl = imageUrl;
     }
 
+    public Long getOtherUserId() {
+        return otherUserId;
+    }
+
+    public void setOtherUserId(Long otherUserId) {
+        this.otherUserId = otherUserId;
+    }
+
+    public String getOtherUserAvatarUrl() {
+        return otherUserAvatarUrl;
+    }
+
+    public void setOtherUserAvatarUrl(String otherUserAvatarUrl) {
+        this.otherUserAvatarUrl = otherUserAvatarUrl;
+    }
 }

@@ -14,5 +14,7 @@ public class StaticResourceConfig implements WebMvcConfigurer {
         // /posts/{id}/image) which check membership/visibility first.
         registry.addResourceHandler("/uploads/avatars/**")
                 .addResourceLocations("file:uploads/avatars/");
+        registry.addResourceHandler("/uploads/groups/**")
+                .addResourceLocations("file:uploads/groups/");
     }
 }

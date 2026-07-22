@@ -1,17 +1,21 @@
 package com.evolt.chatapp.controllers;
 
 import com.evolt.chatapp.models.Conversation;
-import com.evolt.chatapp.models.dto.ConversationListDto;
-import com.evolt.chatapp.models.dto.GroupConversationRequest;
+import com.evolt.chatapp.models.dto.*;
 import com.evolt.chatapp.services.ConversationMemberService;
 import com.evolt.chatapp.services.ConversationService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -97,5 +101,79 @@ public class ConversationController {
         Long userId = Long.parseLong(request.getAttribute("userId").toString());
         Long lastSeen = conversationMemberService.getLastSeenMessageId(userId, conversationId);
         return ResponseEntity.ok(Map.of("lastSeenMessageId", lastSeen != null ? lastSeen : 0L));
+    }
+
+    @GetMapping("/{id}/members")
+    public ResponseEntity<List<ConversationMemberDto>> getMembers(@PathVariable Long id, HttpServletRequest request) {
+        Long requesterId = Long.parseLong(request.getAttribute("userId").toString());
+        return ResponseEntity.ok(conversationMemberService.getMembers(id, requesterId));
+    }
+
+    @PostMapping("/{id}/members")
+    public ResponseEntity<?> addMember(@PathVariable Long id, @RequestBody AddMemberRequest body, HttpServletRequest request) {
+        Long requesterId = Long.parseLong(request.getAttribute("userId").toString());
+        try {
+            return ResponseEntity.ok(conversationMemberService.addMember(id, requesterId, body.getUserId()));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (AccessDeniedException e) {
+            return ResponseEntity.status(403).body(e.getMessage());
+        }
+    }
+
+    @DeleteMapping("/{id}/members/{userId}")
+    public ResponseEntity<?> removeMember(@PathVariable Long id, @PathVariable Long userId, HttpServletRequest request) {
+        Long requesterId = Long.parseLong(request.getAttribute("userId").toString());
+        try {
+            conversationMemberService.removeMember(id, requesterId, userId);
+            return ResponseEntity.ok().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (AccessDeniedException e) {
+            return ResponseEntity.status(403).body(e.getMessage());
+        }
+    }
+
+    @PatchMapping("/{id}/members/{userId}/role")
+    public ResponseEntity<?> changeRole(@PathVariable Long id, @PathVariable Long userId,
+                                        @RequestBody ChangeRoleRequest body, HttpServletRequest request) {
+        Long requesterId = Long.parseLong(request.getAttribute("userId").toString());
+        try {
+            return ResponseEntity.ok(conversationMemberService.changeRole(id, requesterId, userId, body.getRole()));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (AccessDeniedException e) {
+            return ResponseEntity.status(403).body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/{id}/available-users")
+    public ResponseEntity<List<UserDto>> getAvailableUsers(@PathVariable Long id) {
+        return ResponseEntity.ok(conversationService.getUsersNotInConversation(id));
+    }
+
+    @PatchMapping("/{id}/details")
+    public ResponseEntity<?> updateDetails(@PathVariable Long id, @RequestBody UpdateConversationRequest body, HttpServletRequest request) {
+        Long requesterId = Long.parseLong(request.getAttribute("userId").toString());
+        try {
+            return ResponseEntity.ok(conversationService.updateGroupDetails(id, requesterId, body.getName(), body.getImageUrl()));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (AccessDeniedException e) {
+            return ResponseEntity.status(403).body(e.getMessage());
+        }
+    }
+
+    @PostMapping(value = "/{id}/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> uploadGroupImage(@PathVariable Long id, @RequestParam MultipartFile file, HttpServletRequest request) {
+        Long requesterId = Long.parseLong(request.getAttribute("userId").toString());
+        try {
+            String url = conversationService.updateGroupImage(id, requesterId, file);
+            return ResponseEntity.ok(Map.of("imageUrl", url));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (IOException e) {
+            return ResponseEntity.internalServerError().body("Failed to save image");
+        }
     }
 }
