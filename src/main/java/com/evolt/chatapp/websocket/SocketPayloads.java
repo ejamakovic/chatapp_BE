@@ -19,17 +19,25 @@ public class SocketPayloads {
             UserDto sender,
             String content,
             LocalDateTime timestamp,
-            List<AttachmentDto> attachments
+            List<AttachmentDto> attachments,
+            boolean isDeleted,
+            LocalDateTime editedAt
     ) {
         public MessagePayload(MessageDto dto) {
+            this("message", dto);
+        }
+
+        public MessagePayload(String type, MessageDto dto) {
             this(
-                    "message",
+                    type,
                     dto.getId(),
                     dto.getConversationId(),
                     dto.getSender(),
                     dto.getContent(),
                     dto.getTimestamp(),
-                    dto.getAttachments()
+                    dto.getAttachments(),
+                    dto.isDeleted(),
+                    dto.getEditedAt()
             );
         }
     }

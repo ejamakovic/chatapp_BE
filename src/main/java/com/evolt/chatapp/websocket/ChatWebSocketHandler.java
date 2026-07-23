@@ -97,6 +97,17 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
                     }
                 }
             }
+            case "MESSAGE_EDITED" -> {
+                MessageDto messageDto = (MessageDto) event.getPayload();
+                SocketPayloads.MessagePayload payload =
+                        new SocketPayloads.MessagePayload("message_edited", messageDto);
+
+                List<String> participants =
+                        conversationMemberService.getParticipants(messageDto.getConversationId());
+                for (String username : participants) {
+                    sendToUser(username, payload);
+                }
+            }
             default -> logger.warn("Received unhandled WebSocket event type: {}", event.getEventType());
         }
     }

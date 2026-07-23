@@ -29,6 +29,9 @@ public class MessageDto {
     public record ReplySummaryDto(Long id, String senderUsername, String content) {}
     private ReplySummaryDto replyTo;
 
+    private boolean isDeleted;
+    private LocalDateTime editedAt;
+
     public MessageDto() {
     }
 
@@ -59,6 +62,8 @@ public class MessageDto {
             this.replyTo = new ReplySummaryDto(r.getId(), r.getSender().getUsername(),
                     r.isDeleted() ? "Poruka je obrisana" : r.getContent());
         }
+        this.isDeleted = message.isDeleted();
+        this.editedAt = message.getEditedAt();
     }
 
     public Long getId() {
@@ -124,5 +129,11 @@ public class MessageDto {
     public void setMessageReactions(List<MessageReactionDto> messageReactions) {
         this.messageReactions = messageReactions;
     }
+
+    public boolean isDeleted() { return isDeleted; }
+    public void setDeleted(boolean isDeleted) { this.isDeleted = isDeleted; }
+
+    public LocalDateTime getEditedAt() { return editedAt; }
+    public void setEditedAt(LocalDateTime editedAt) { this.editedAt = editedAt; }
 
 }
