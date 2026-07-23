@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -56,8 +57,17 @@ public class MessageService {
     }
 
     @Transactional
-    public MessageDto saveMessageDTO(Long senderId, Long conversationId, String content,
+    public MessageDto saveMessageDTO(Long senderId, Long conversationId, String content, Long replyToMessageId,
                                      String timestamp, List<MultipartFile> files) {
+
+        Optional<Conversation> conversation =
+                conversationRepository.findById(conversationId);
+
+        if (!conversation.isPresent()) {
+            throw new AccessDeniedException(
+                    "Conversation with id " + conversationId + " doesn't exist!"
+            );
+        }
 
         boolean isMember = conversationMemberRepository
                 .findConversationMembersByConversationId(conversationId)
@@ -70,25 +80,29 @@ public class MessageService {
 
         User sender = userService.findById(senderId);
 
-        Optional<Conversation> conversation =
-                conversationRepository.findById(conversationId);
+        Optional<Message> replyTo =
+                messageRepository.findById(replyToMessageId);
+
+        if (!replyTo.isPresent()){
+            throw new AccessDeniedException(
+                    "Message to reply with id " + replyToMessageId + " doesn't exist!"
+            );
+        }
+
+        if (replyTo.get().getConversation() != conversation.get()) {
+            throw new AccessDeniedException("Reply message doesn't belong to the same conversation as message that is sent");
+        }
 
         Message message = new Message(
                 sender,
                 conversation.orElse(null),
-                content
+                content,
+                replyTo.get()
         );
 
         Message savedMessage = messageRepository.save(message);
 
-        if (conversation.isPresent()) {
-            conversationRepository.updateLastMessage(conversation.get().getId(), message);
-        }
-        else {
-            throw new AccessDeniedException(
-                    "Conversation with id " + conversationId + " doesn't exist!"
-            );
-        }
+        conversationRepository.updateLastMessage(conversation.get().getId(), message);
 
         // Save all files (images/videos)
         if (files != null && !files.isEmpty()) {
@@ -170,4 +184,34 @@ public class MessageService {
         return ordered.stream().map(MessageDto::new).toList();
     }
 
+    @Transactional
+    public MessageDto editMessage(Long messageId, Long userId, String newContent) {
+        Message message = messageRepository.findById(messageId)
+                .orElseThrow(() -> new IllegalArgumentException("Message not found"));
+        if (!message.getSender().getId().equals(userId)) {
+            throw new AccessDeniedException("You can only edit your own messages");
+        }
+        if (message.isDeleted()) throw new IllegalArgumentException("Cannot edit a deleted message");
+        if (newContent == null || newContent.isBlank()) throw new IllegalArgumentException("Content cannot be empty");
+        message.setContent(newContent.trim());
+        message.setEditedAt(LocalDateTime.now());
+        MessageDto dto = new MessageDto(messageRepository.save(message));
+        eventPublisher.publishEvent(new WebSocketEvent<>("MESSAGE_EDITED", dto));
+        return dto;
+    }
+
+    @Transactional
+    public MessageDto softDeleteMessage(Long messageId, Long userId) {
+        Message message = messageRepository.findById(messageId)
+                .orElseThrow(() -> new IllegalArgumentException("Message not found"));
+        if (!message.getSender().getId().equals(userId)) {
+            throw new AccessDeniedException("You can only delete your own messages");
+        }
+        message.setDeleted(true);
+        message.setDeletedAt(LocalDateTime.now());
+        message.setContent(null);
+        MessageDto dto = new MessageDto(messageRepository.save(message));
+        eventPublisher.publishEvent(new WebSocketEvent<>("MESSAGE_EDITED", dto));
+        return dto;
+    }
 }

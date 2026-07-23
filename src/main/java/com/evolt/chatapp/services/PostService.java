@@ -229,4 +229,9 @@ public class PostService {
                 friendIds.contains(post.getAuthor().getId())
         );
     }
+
+    public PostDto getPostDto(Long postId, Long requesterId) {
+        Post post = findByIdCheckingVisibility(postId, requesterId);
+        return toDto(post, requesterId, requesterFriendIds(requesterId));
+    }
 }

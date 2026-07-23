@@ -26,6 +26,9 @@ public class MessageDto {
 
     private List<MessageReactionDto> messageReactions;
 
+    public record ReplySummaryDto(Long id, String senderUsername, String content) {}
+    private ReplySummaryDto replyTo;
+
     public MessageDto() {
     }
 
@@ -51,6 +54,11 @@ public class MessageDto {
         this.attachments = list;
         this.messageReactions = messageReactions;
         this.conversationId = message.getConversation().getId();
+        if (message.getReplyTo() != null) {
+            Message r = message.getReplyTo();
+            this.replyTo = new ReplySummaryDto(r.getId(), r.getSender().getUsername(),
+                    r.isDeleted() ? "Poruka je obrisana" : r.getContent());
+        }
     }
 
     public Long getId() {
@@ -116,4 +124,5 @@ public class MessageDto {
     public void setMessageReactions(List<MessageReactionDto> messageReactions) {
         this.messageReactions = messageReactions;
     }
+
 }

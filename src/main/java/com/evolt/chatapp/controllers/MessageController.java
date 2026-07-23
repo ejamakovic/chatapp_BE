@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -72,12 +73,13 @@ public class MessageController {
     public ResponseEntity<?> sendMessage(
             @RequestParam Long conversationId,
             @RequestParam String content,
+            @RequestParam(required = false) Long replyToMessageId,
             @RequestParam(required = false) List<MultipartFile> files,
             HttpServletRequest request
     ) {
         Long senderId = Long.parseLong(request.getAttribute("userId").toString());
         try {
-            MessageDto dto = messageService.saveMessageDTO(senderId, conversationId, content, null, files);
+            MessageDto dto = messageService.saveMessageDTO(senderId, conversationId, content, replyToMessageId, null, files);
             return ResponseEntity.ok(dto);
         } catch (AccessDeniedException e) {
             return ResponseEntity.status(403).body(e.getMessage());
@@ -111,5 +113,23 @@ public class MessageController {
         List<AttachmentDto> media = attachmentService.findByConversationId(id)
                 .stream().map(AttachmentDto::new).toList();
         return ResponseEntity.ok(media);
+    }
+
+    @PatchMapping("/{id}")
+    public ResponseEntity<?> editMessage(@PathVariable Long id, @RequestBody Map<String, String> body, HttpServletRequest request) {
+        Long userId = Long.parseLong(request.getAttribute("userId").toString());
+        try {
+            return ResponseEntity.ok(messageService.editMessage(id, userId, body.get("content")));
+        } catch (AccessDeniedException e) { return ResponseEntity.status(403).body(e.getMessage()); }
+        catch (IllegalArgumentException e) { return ResponseEntity.badRequest().body(e.getMessage()); }
+    }
+
+    @PatchMapping("/{id}/delete")
+    public ResponseEntity<?> softDeleteMessage(@PathVariable Long id, HttpServletRequest request) {
+        Long userId = Long.parseLong(request.getAttribute("userId").toString());
+        try {
+            return ResponseEntity.ok(messageService.softDeleteMessage(id, userId));
+        } catch (AccessDeniedException e) { return ResponseEntity.status(403).body(e.getMessage()); }
+        catch (IllegalArgumentException e) { return ResponseEntity.badRequest().body(e.getMessage()); }
     }
 }

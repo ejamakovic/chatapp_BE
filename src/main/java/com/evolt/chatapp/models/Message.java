@@ -56,6 +56,15 @@ public class Message {
     @OneToMany(mappedBy = "message", fetch = FetchType.LAZY)
     private List<MessageReaction> messageReactions = new ArrayList<>();
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "reply_to_message_id")
+    private Message replyTo;
+
+    @Column(name = "is_deleted", nullable = false)
+    private boolean deleted = false;
+    private LocalDateTime deletedAt;
+    private LocalDateTime editedAt;
+
     public Message(User sender, Conversation conversation, String content) {
         this.sender = sender;
         this.conversation = conversation;
@@ -89,10 +98,11 @@ public class Message {
         this.status = status;
     }
 
-    public Message(Conversation conversation, User sender, String content) {
+    public Message(User sender, Conversation conversation, String content, Message replyTo) {
         this.conversation = conversation;
         this.sender = sender;
         this.content = content;
+        this.replyTo = replyTo;
     }
 
     public Message() {
@@ -161,5 +171,37 @@ public class Message {
 
     public void setMessageReactions(List<MessageReaction> messageReactions) {
         this.messageReactions = messageReactions;
+    }
+
+    public Message getReplyTo() {
+        return replyTo;
+    }
+
+    public void setReplyTo(Message replyTo) {
+        this.replyTo = replyTo;
+    }
+
+    public boolean isDeleted() {
+        return deleted;
+    }
+
+    public void setDeleted(boolean deleted) {
+        this.deleted = deleted;
+    }
+
+    public LocalDateTime getDeletedAt() {
+        return deletedAt;
+    }
+
+    public void setDeletedAt(LocalDateTime deletedAt) {
+        this.deletedAt = deletedAt;
+    }
+
+    public LocalDateTime getEditedAt() {
+        return editedAt;
+    }
+
+    public void setEditedAt(LocalDateTime editedAt) {
+        this.editedAt = editedAt;
     }
 }

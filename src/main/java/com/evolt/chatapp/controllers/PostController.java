@@ -176,6 +176,17 @@ public class PostController {
         }
     }
 
+    @GetMapping("/{id}")
+    public ResponseEntity<?> getPost(@PathVariable Long id, HttpServletRequest request) {
+        try {
+            return ResponseEntity.ok(postService.getPostDto(id, currentUserId(request)));
+        } catch (AccessDeniedException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
     private Long currentUserId(HttpServletRequest request) {
         return Long.parseLong(request.getAttribute("userId").toString());
     }
